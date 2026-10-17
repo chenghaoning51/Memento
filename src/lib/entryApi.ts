@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Entry, EntryDraft, EntrySummary, LibraryInfo } from "../types/entry";
+import type { Attachment, Entry, EntryDraft, EntrySummary, LibraryInfo } from "../types/entry";
 
 export function libraryInfo(): Promise<LibraryInfo> {
   return invoke<LibraryInfo>("library_info");
@@ -19,4 +19,12 @@ export function createEntry(entryDate: string): Promise<Entry> {
 
 export function saveEntry(draft: EntryDraft): Promise<Entry> {
   return invoke<Entry>("save_entry", { draft });
+}
+
+export function importAttachment(entryId: string, bytes: Uint8Array): Promise<Attachment> {
+  return invoke<Attachment>("import_attachment", { entryId, bytes: Array.from(bytes) });
+}
+
+export function deleteAttachment(id: string): Promise<void> {
+  return invoke<void>("delete_attachment", { id });
 }

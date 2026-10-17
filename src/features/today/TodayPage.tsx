@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Feather, Plus } from "lucide-react";
+import { attachmentSource } from "../../lib/attachmentSource";
 import { createEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
 import { readContent, writeContent } from "../../lib/entryContent";
 import { formatClockTime, formatLocalDate, toLocalDateString } from "../../lib/localDate";
@@ -12,6 +13,7 @@ type Draft = {
   id: string;
   content: JSONContent;
   contentText: string;
+  coverAttachmentId: string | null;
 };
 
 const statusText: Record<SaveStatus, string> = {
@@ -41,9 +43,16 @@ export function TodayPage() {
       title: "",
       contentJson: writeContent(current.content),
       contentText: current.contentText,
+      coverAttachmentId: current.coverAttachmentId,
     });
     setEntries((list) =>
-      list ? list.map((item) => (item.id === saved.id ? { ...item, excerpt: saved.excerpt } : item)) : list,
+      list
+        ? list.map((item) =>
+            item.id === saved.id
+              ? { ...item, excerpt: saved.excerpt, coverAttachmentId: saved.coverAttachmentId }
+              : item,
+          )
+        : list,
     );
     setError(null);
   }, []);
@@ -65,7 +74,12 @@ export function TodayPage() {
       }
       try {
         const entry = await getEntry(id);
-        setDraft({ id: entry.id, content: readContent(entry.contentJson), contentText: entry.contentText });
+        setDraft({
+          id: entry.id,
+          content: readContent(entry.contentJson),
+          contentText: entry.contentText,
+          coverAttachmentId: entry.coverAttachmentId,
+        });
         setError(null);
       } catch (cause) {
         setError(String(cause));
@@ -92,7 +106,12 @@ export function TodayPage() {
     }
     try {
       const entry = await createEntry(entryDate);
-      setDraft({ id: entry.id, content: readContent(entry.contentJson), contentText: entry.contentText });
+      setDraft({
+        id: entry.id,
+        content: readContent(entry.contentJson),
+        contentText: entry.contentText,
+        coverAttachmentId: entry.coverAttachmentId,
+      });
       setError(null);
       await refreshList();
     } catch (cause) {
@@ -100,8 +119,8 @@ export function TodayPage() {
     }
   }, [entryDate, flush, refreshList]);
 
-  const onContentChange = (content: JSONContent, contentText: string) => {
-    setDraft((current) => (current ? { ...current, content, contentText } : current));
+  const onContentChange = (content: JSONContent, contentText: string, coverAttachmentId: string | null) => {
+    setDraft((current) => (current ? { ...current, content, contentText, coverAttachmentId } : current));
     schedule();
   };
 
@@ -130,10 +149,13 @@ export function TodayPage() {
               {entries.map((entry) => (
                 <li key={entry.id}>
                   <button
-                    className={`entry-item${entry.id === draft?.id ? " is-active" : ""}`}
+                    className={`entry-item${entry.coverAttachmentId ? " has-cover" : ""}${entry.id === draft?.id ? " is-active" : ""}`}
                     type="button"
                     onClick={() => void openEntry(entry.id)}
                   >
+                    {entry.coverAttachmentId && (
+                      <img className="entry-cover" src={attachmentSource(entry.coverAttachmentId)} alt="" />
+                    )}
                     <span className="entry-time">{formatClockTime(entry.createdAtUtc)}</span>
                     <span className="entry-excerpt">{entry.excerpt || "空白日记"}</span>
                   </button>
@@ -154,7 +176,7 @@ export function TodayPage() {
           </div>
 
           {draft ? (
-            <EntryEditor key={draft.id} content={draft.content} onChange={onContentChange} />
+            <EntryEditor key={draft.id} entryId={draft.id} content={draft.content} onChange={onContentChange} />
           ) : (
             <div className="empty-page">
               <div className="empty-mark" aria-hidden="true">

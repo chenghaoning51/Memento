@@ -6,6 +6,7 @@ pub enum AppError {
     Io(std::io::Error),
     UnsupportedSchema(i64),
     MissingEntry(String),
+    UnsupportedImage(String),
 }
 
 impl std::fmt::Display for AppError {
@@ -18,6 +19,7 @@ impl std::fmt::Display for AppError {
                 "数据库模式版本 {version} 高于当前应用支持的版本，请升级 Memento 后再打开"
             ),
             AppError::MissingEntry(id) => write!(f, "日记 {id} 已不存在，无法保存"),
+            AppError::UnsupportedImage(message) => write!(f, "{message}"),
         }
     }
 }

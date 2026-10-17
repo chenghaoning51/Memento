@@ -341,6 +341,7 @@ button:focus-visible {
 .entry-item {
   display: grid;
   width: 100%;
+  align-items: center;
   gap: 3px;
   padding: 9px 11px;
   border: 1px solid transparent;
@@ -349,6 +350,19 @@ button:focus-visible {
   background: transparent;
   cursor: pointer;
   text-align: left;
+}
+
+.entry-item.has-cover {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 3px 9px;
+}
+
+.entry-cover {
+  width: 34px;
+  height: 34px;
+  grid-row: span 2;
+  border-radius: 3px;
+  object-fit: cover;
 }
 
 .entry-item:hover {
@@ -371,6 +385,11 @@ button:focus-visible {
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.entry-item.has-cover .entry-time,
+.entry-item.has-cover .entry-excerpt {
+  grid-column: 2;
 }
 
 .entry-list-empty {
@@ -499,6 +518,25 @@ button:focus-visible {
   text-decoration: underline;
   text-decoration-color: #b9c2dc;
   text-underline-offset: 2px;
+}
+
+.entry-editor img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+  border-radius: 3px;
+}
+
+.entry-editor img.ProseMirror-selectednode {
+  outline: 2px solid #c2cbe4;
+  outline-offset: 2px;
+}
+
+.editor-error {
+  margin: 9px 0 0;
+  color: #a4442f;
+  font-size: 12px;
 }
 
 .entry-editor p.is-empty::before {

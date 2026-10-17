@@ -1,14 +1,31 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
+import Image from "@tiptap/extension-image";
 import type { JSONContent } from "@tiptap/core";
-import { Bold, Heading2, Italic, Link2, Minus, Quote, Redo2, Undo2 } from "lucide-react";
+import { Bold, Heading2, ImagePlus, Italic, Link2, Minus, Quote, Redo2, Undo2 } from "lucide-react";
+import { attachmentSource } from "../../lib/attachmentSource";
+import { importAttachment } from "../../lib/entryApi";
 
 type EntryEditorProps = {
+  entryId: string;
   content: JSONContent;
-  onChange: (content: JSONContent, contentText: string) => void;
+  onChange: (content: JSONContent, contentText: string, coverAttachmentId: string | null) => void;
 };
+
+/** 正文里出现的附件 ID，按出现顺序排列；第一张就是日记首图。 */
+function collectAttachmentIds(content: JSONContent): string[] {
+  const ids: string[] = [];
+  const walk = (node: JSONContent) => {
+    if (node.type === "image" && typeof node.attrs?.attachmentId === "string") {
+      ids.push(node.attrs.attachmentId);
+    }
+    node.content?.forEach(walk);
+  };
+  walk(content);
+  return ids;
+}
 
 const extensions = [
   StarterKit.configure({
@@ -27,23 +44,55 @@ const extensions = [
     },
   }),
   Placeholder.configure({ placeholder: "今天发生了什么？" }),
+  Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        attachmentId: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("data-attachment-id"),
+          renderHTML: (attributes) =>
+            attributes.attachmentId ? { "data-attachment-id": attributes.attachmentId } : {},
+        },
+      };
+    },
+  }).configure({ allowBase64: false }),
 ];
 
 /**
  * 正文编辑器：结构化内容与纯文本副本一起回传，纯文本供摘要和搜索使用。
  * 切换日记时由调用方按 ID 重建实例，编辑器不负责跨日记保留状态。
  */
-export function EntryEditor({ content, onChange }: EntryEditorProps) {
+export function EntryEditor({ entryId, content, onChange }: EntryEditorProps) {
   const [initialContent] = useState(content);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkValue, setLinkValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions,
     content: initialContent,
-    editorProps: { attributes: { class: "entry-editor", "aria-label": "日记正文" } },
+    editorProps: {
+      attributes: { class: "entry-editor", "aria-label": "日记正文" },
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []);
+        if (files.length === 0) return false;
+        event.preventDefault();
+        void insertImages(files);
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []);
+        if (files.length === 0) return false;
+        event.preventDefault();
+        void insertImages(files);
+        return true;
+      },
+    },
     onUpdate: ({ editor }) => {
-      onChange(editor.getJSON(), editor.getText({ blockSeparator: "\n" }));
+      const json = editor.getJSON();
+      onChange(json, editor.getText({ blockSeparator: "\n" }), collectAttachmentIds(json)[0] ?? null);
     },
   });
 
@@ -61,6 +110,36 @@ export function EntryEditor({ content, onChange }: EntryEditorProps) {
   });
 
   if (!editor) return null;
+
+  /**
+   * 先逐张落盘拿到附件 ID，再一次性插入所有成功的图片。
+   * 分多次插入时后一张会替换前一张的选区，多图会只剩最后一张。
+   */
+  const insertImages = async (files: File[]) => {
+    const nodes: JSONContent[] = [];
+    let failed = false;
+    for (const file of files) {
+      try {
+        const attachment = await importAttachment(entryId, new Uint8Array(await file.arrayBuffer()));
+        nodes.push({
+          type: "image",
+          attrs: {
+            src: attachmentSource(attachment.id),
+            attachmentId: attachment.id,
+            alt: file.name,
+            width: attachment.width,
+            height: attachment.height,
+          },
+        });
+      } catch (cause) {
+        failed = true;
+        setError(String(cause));
+      }
+    }
+    if (nodes.length === 0) return;
+    editor.chain().focus().insertContent(nodes).run();
+    if (!failed) setError(null);
+  };
 
   const openLink = () => {
     const href = editor.getAttributes("link").href as string | undefined;
@@ -130,6 +209,14 @@ export function EntryEditor({ content, onChange }: EntryEditorProps) {
           <Minus size={15} strokeWidth={1.9} aria-hidden="true" />
         </button>
         <button
+          className="editor-tool"
+          type="button"
+          title="插入图片"
+          onClick={() => fileInput.current?.click()}
+        >
+          <ImagePlus size={15} strokeWidth={1.9} aria-hidden="true" />
+        </button>
+        <button
           className={`editor-tool${active.link ? " is-active" : ""}`}
           type="button"
           title="链接"
@@ -159,6 +246,19 @@ export function EntryEditor({ content, onChange }: EntryEditorProps) {
         </button>
       </div>
 
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/png,image/jpeg"
+        multiple
+        hidden
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = "";
+          void insertImages(files);
+        }}
+      />
+
       {linkOpen && (
         <div className="editor-link-row">
           <input
@@ -181,6 +281,12 @@ export function EntryEditor({ content, onChange }: EntryEditorProps) {
             </button>
           )}
         </div>
+      )}
+
+      {error && (
+        <p className="editor-error" role="alert">
+          {error}
+        </p>
       )}
 
       <EditorContent editor={editor} />

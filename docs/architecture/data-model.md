@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-M1 已创建数据库与迁移系统，实际落地的只有 `entries` 表：
+M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表。当前实际落地的两张表：
 
 ```sql
 CREATE TABLE entries (
@@ -22,7 +22,23 @@ CREATE INDEX entries_by_date    ON entries (entry_date, created_at_utc);
 CREATE INDEX entries_by_deleted ON entries (deleted_at_utc);
 ```
 
-迁移版本记录在 `PRAGMA user_version`，不再使用 `schema_meta` 表（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。`attachments`、`tags`、`entry_tags`、`letters`、`settings` 仍为目标设计，随 M2–M4 的迁移增量加入；备份容器格式在 M5 前确定。具体契约改变或选型前先写 ADR。
+```sql
+CREATE TABLE attachments (
+  id             TEXT PRIMARY KEY NOT NULL,
+  entry_id       TEXT NOT NULL REFERENCES entries (id),
+  relative_path  TEXT NOT NULL,
+  mime_type      TEXT NOT NULL,
+  file_size      INTEGER NOT NULL,
+  sha256         TEXT NOT NULL,
+  width          INTEGER NOT NULL,
+  height         INTEGER NOT NULL,
+  created_at_utc TEXT NOT NULL
+);
+CREATE INDEX attachments_by_entry  ON attachments (entry_id);
+CREATE INDEX attachments_by_sha256 ON attachments (sha256);
+```
+
+迁移版本记录在 `PRAGMA user_version`，不再使用 `schema_meta` 表（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。`tags`、`entry_tags`、`letters`、`settings` 仍为目标设计，随 M2–M4 的迁移增量加入；备份容器格式在 M5 前确定。具体契约改变或选型前先写 ADR。
 
 ## 设计目标
 
@@ -30,20 +46,9 @@ CREATE INDEX entries_by_deleted ON entries (deleted_at_utc);
 
 ## 核心表
 
-`entries` 已在 M1 实现，字段见上文建表语句。以下为目标设计：
+`entries` 与 `attachments` 已实现，字段见上文建表语句。以下为目标设计：
 
 ```text
-attachments
-- id
-- entry_id
-- relative_path
-- mime_type
-- file_size
-- sha256
-- width
-- height
-- created_at_utc
-
 tags
 - id
 - name
@@ -76,7 +81,7 @@ settings
 
 - 所有主键使用稳定 UUID，避免导入和恢复时依赖数据库自增值。M1 的 `id` 由 Rust 侧生成 UUID v4。
 - 日记删除使用软删除；永久删除需要单独的清理动作。M1 只写入 `deleted_at_utc`，正常列表按 `deleted_at_utc IS NULL` 过滤。
-- 附件保存 SHA-256，用于备份校验和重复文件识别。
+- 附件保存 SHA-256，用于备份校验和重复文件识别。原图复制进 `attachments/<entry_id>/<attachment_id>.<ext>`，缩略图在 `thumbnails/<attachment_id>.jpg`；表里只存相对路径，不存绝对路径。附件行与文件的一致性由导入顺序保证（先文件后行，失败回滚文件），删除图片节点或软删除日记都不自动清理附件，见 [ADR-0005](../decisions/0005-attachment-files.md)。
 - 编辑器正文同时保存结构化 JSON 和纯文本副本，后者用于摘要和搜索。当前格式为 version 2，即 ProseMirror 文档，例如 `{"version":2,"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"标题"}]}]}`；version 1 把文字放在段落的 `text` 字段里，读取时自动升级为行内节点。未知高版本拒绝编辑，见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)。
 - `excerpt` 由 Rust 侧从 `content_text` 折叠空白后截取前 80 字符，不信任前端传入。
 - 数据库迁移必须带版本号，并在启动时按顺序执行；`user_version` 高于当前支持版本时启动失败并拒绝写入。

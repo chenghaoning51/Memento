@@ -27,3 +27,4 @@
 - [0002：使用 rusqlite 访问本地 SQLite](0002-sqlite-storage.md)
 - [0003：M1 使用结构化纯文本正文，M2 再引入 Tiptap](0003-editor-and-body-format.md)
 - [0004：用 Tiptap 承载正文编辑，正文格式升到 v2](0004-tiptap-editor-and-content-v2.md)
+- [0005：图片存为附件文件，正文只记附件 ID](0005-attachment-files.md)

@@ -19,6 +19,20 @@ const MIGRATIONS: &[&str] = &[
      );
      CREATE INDEX entries_by_date ON entries (entry_date, created_at_utc);
      CREATE INDEX entries_by_deleted ON entries (deleted_at_utc);",
+    // v2：附件元数据。文件本体在 Library 的 attachments/ 下，库里只存相对路径和校验值。
+    "CREATE TABLE attachments (
+        id TEXT PRIMARY KEY NOT NULL,
+        entry_id TEXT NOT NULL REFERENCES entries (id),
+        relative_path TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        sha256 TEXT NOT NULL,
+        width INTEGER NOT NULL,
+        height INTEGER NOT NULL,
+        created_at_utc TEXT NOT NULL
+     );
+     CREATE INDEX attachments_by_entry ON attachments (entry_id);
+     CREATE INDEX attachments_by_sha256 ON attachments (sha256);",
 ];
 
 pub fn target_version() -> i64 {

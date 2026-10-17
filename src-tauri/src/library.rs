@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use rusqlite::Connection;
@@ -36,6 +36,11 @@ impl Library {
             root,
             connection: Mutex::new(connection),
         })
+    }
+
+    /// 附件、缩略图等文件路径都以这个根为基准。
+    pub fn root(&self) -> &Path {
+        &self.root
     }
 
     pub fn with_connection<T>(&self, action: impl FnOnce(&Connection) -> AppResult<T>) -> AppResult<T> {

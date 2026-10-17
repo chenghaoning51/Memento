@@ -2,13 +2,13 @@
 
 - 规划基线：2026-10-17。
 - 目标：交付 Windows 上完全离线可用、内容可可靠保存并能完整恢复的 MVP。
-- 状态：M0 与 M1 已完成，M2 待开始；除“当前基线”明确列出的能力外，下文均为待实施工作。
+- 状态：M0、M1 已完成，M2 进行中（M2-01、M2-02 已完成）；除“当前基线”明确列出的能力外，下文均为待实施工作。
 - 范围依据：[产品愿景](../product/vision.md)、[MVP 范围](../product/mvp-scope.md)。
 - 配套文档：[迭代流程](iteration-workflow.md)、[验收清单](acceptance.md)、[路线图](../roadmap.md)。
 
 ## 1. 当前基线与框架理解
 
-M1 之后已经形成“创建 → 编辑 → 自动保存 → 关闭重开”的保存闭环，但还没有格式编辑、图片、标签、回收站、检索、信件、导出与备份。
+M1 之后已经形成“创建 → 编辑 → 自动保存 → 关闭重开”的保存闭环；M2-01 加入格式编辑，M2-02 加入图片。仍缺标签、回收站、检索、信件、导出与备份。
 
 | 层次 | 当前实现与证据 | 开发时需要补齐 |
 | --- | --- | --- |
@@ -16,14 +16,14 @@ M1 之后已经形成“创建 → 编辑 → 自动保存 → 关闭重开”�
 | 应用壳与导航 | `src/app/App.tsx` 通过组件状态切页；“今天”与“设置”是真实页面，其余走 `features/placeholder/SectionPage.tsx` | 继续替换占位页，处理编辑中切页和日期定位 |
 | 功能页面 | `features/today/TodayPage.tsx` 接真实数据；`features/settings/SettingsPage.tsx` 显示数据位置 | 时间浏览、搜索、未来信件、标签与回收站 |
 | 应用服务与类型 | `src/lib/entryApi.ts` 封装命令，`src/lib/entryContent.ts` 维护正文 JSON，`src/lib/localDate.ts` 处理本地日历日期，`src/types/entry.ts` 定义共享类型 | 随新功能扩展服务层，保持 UI 不碰 SQL 和文件路径 |
-| 编辑与保存 | `src/features/today/useAutosave.ts`：800 ms 空闲保存、最多 5 秒强制保存、串行写入、失败重试、切页与关闭前 flush | 富文本编辑、撤销、粘贴与中文输入法回归 |
+| 编辑与保存 | `src/features/today/useAutosave.ts`：800 ms 空闲保存、最多 5 秒强制保存、串行写入、失败重试、切页与关闭前 flush；`EntryEditor.tsx` 承载 Tiptap 工具栏与图片导入 | 标签与回收站交互、持续回归撤销与粘贴 |
 | 视觉基础 | `src/styles.css` 包含颜色令牌、排版与响应式布局 | 随真实交互补充组件和键盘操作，不以重做外观阻塞主流程 |
-| 前端依赖 | React 19、TypeScript 6、Vite 8、Tauri API 2、Lucide | 编辑器仍未接入；新增依赖前完成 ADR |
-| 桌面入口 | `src-tauri/src/lib.rs` 在 setup 中打开 Library 并注册命令 | 附件、导入导出与备份命令 |
-| Rust 模块 | `db/migrations.rs` 顺序迁移、`library.rs` 连接与 WAL、`entries/repository.rs` 仓储、`commands.rs` 五个命令、`error.rs` 统一错误 | 附件、标签、回收站、信件与备份 |
-| Rust 依赖 | Tauri 2、Serde、Serde JSON、rusqlite（bundled）、time、uuid | 按阶段选择，引入前写 ADR |
+| 前端依赖 | React 19、TypeScript 6、Vite 8、Tauri API 2、Lucide、Tiptap 3.32 | 新增依赖前完成 ADR |
+| 桌面入口 | `src-tauri/src/lib.rs` 在 setup 中打开 Library、注册七个命令与 `attachment` 自定义协议 | 导入导出与备份命令 |
+| Rust 模块 | `db/migrations.rs` 顺序迁移、`library.rs` 连接与 WAL、`entries/repository.rs` 与 `attachments/repository.rs` 仓储、`attachments/mod.rs` 图片识别与缩略图、`commands.rs` 七个命令、`error.rs` 统一错误 | 标签、回收站、信件与备份 |
+| Rust 依赖 | Tauri 2、Serde、Serde JSON、rusqlite（bundled）、time、uuid、sha2、image 0.25（只开 png/jpeg） | 按阶段选择，引入前写 ADR |
 | 权限与打包 | 窗口配置、应用标识和图标；capability 含 `core:default` 与 `core:window:allow-destroy`；CSP 当前为 `null` | 验证业务命令权限、内容加载边界与 Windows 安装升级 |
-| 质量基础 | `pnpm build`、`cargo check` 与 `cargo test`（3 个用例）通过；M1 桌面验收见[迭代记录](iterations/iteration-001.md) | 前端测试、固定验收数据与 CI |
+| 质量基础 | `pnpm build`、`cargo check` 与 `cargo test`（5 个用例）通过；桌面验收见[迭代 001](iterations/iteration-001.md)与[迭代 002](iterations/iteration-002.md) | 前端测试、固定验收数据与 CI |
 
 `src/components/` 仍为空缺，等出现跨功能复用组件时再建立，避免空目录先行。仓库已有首个提交作为版本基线，Rust 侧有 `cargo test`，但前端仍无测试命令、也没有 CI 工作流；构建通过不代表持久化或桌面业务已经验证。
 
@@ -115,11 +115,11 @@ M0、M1 任务已完成，M2-01 已完成，M2-02 起与 M3–M6 任务初始状
 | 编号 | 任务与产出 | 完成依据 |
 | --- | --- | --- |
 | M2-01 ✅ | 标题、引用、分隔线、链接、撤销等编辑能力；同步维护结构化正文和搜索文本 | 中文输入法、粘贴、撤销和重开后内容正常，正文格式有版本策略 |
-| M2-02 | 图片导入、附件元数据、相对路径、首图和需要的缩略图 | 多图可显示；原文件删除或移动后仍可阅读；失败没有损坏正文引用 |
+| M2-02 ✅ | 图片导入、附件元数据、相对路径、首图和需要的缩略图 | 多图可显示；原文件删除或移动后仍可阅读；失败没有损坏正文引用 |
 | M2-03 | 标签编辑、日记软删除、回收站列表与恢复 | 删除记录不再出现在正常浏览中；恢复后正文、图片和标签关系完整 |
 | M2-04 | 编辑器与附件故障回归 | [A06–A09](acceptance.md#功能与可靠性验收矩阵) 通过，M1 用例继续通过 |
 
-附件和数据库写入顺序、失败清理、备份期间的一致性必须一并设计。回收站中的附件不能当作孤立文件清除；永久删除和自动清理的产品规则未确定前不自行加入。
+附件和数据库写入顺序、失败清理、备份期间的一致性必须一并设计，结论见 [ADR-0005](../decisions/0005-attachment-files.md)：先写文件后插行，失败回滚文件，正文只记附件 ID。回收站中的附件不能当作孤立文件清除；永久删除和自动清理的产品规则未确定前不自行加入。
 
 退出条件：完全离线写入中文长文和多张图片，能保存、重开、删除、恢复；错误情况下保留可恢复的内容。
 
@@ -206,11 +206,9 @@ M0、M1 任务已完成，M2-01 已完成，M2-02 起与 M3–M6 任务初始状
 
 ## 8. 紧接着开展的工作
 
-M1 已交付第一条可靠保存链路，下一轮从 M2 开始：
+M2-01 与 M2-02 已交付，下一轮继续 M2：
 
-1. M2-01：在 `content_json` 的 `version` 契约上引入富文本编辑能力（标题、引用、分隔线、链接、撤销），同步维护 `content_text`。引入 Tiptap 前先写 ADR，确认维护成本与正文格式演进路径。
-2. M2-02：图片导入与附件目录，设计数据库写入与文件落盘的顺序、失败清理与相对路径规则。
-3. M2-03：标签编辑、日记软删除、回收站列表与恢复；软删除已在 M1 的 `deleted_at_utc` 上预留。
-4. M2-04：编辑器与附件故障回归，A06–A09 通过且 M1 用例继续通过。
+1. M2-03：标签编辑、日记软删除、回收站列表与恢复；软删除已在 M1 的 `deleted_at_utc` 上预留。
+2. M2-04：编辑器与附件故障回归，A06–A09 通过且 M1 用例继续通过。
 
-M2 开工前需要先确认附件写入顺序与备份一致性设计，避免 M5 才发现数据无法完整导出。
+附件写入顺序与备份一致性的结论已落在 [ADR-0005](../decisions/0005-attachment-files.md)，M5 的备份需要连同 `attachments/` 与 `thumbnails/` 一起打包。
