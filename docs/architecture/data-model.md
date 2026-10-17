@@ -77,7 +77,7 @@ settings
 - 所有主键使用稳定 UUID，避免导入和恢复时依赖数据库自增值。M1 的 `id` 由 Rust 侧生成 UUID v4。
 - 日记删除使用软删除；永久删除需要单独的清理动作。M1 只写入 `deleted_at_utc`，正常列表按 `deleted_at_utc IS NULL` 过滤。
 - 附件保存 SHA-256，用于备份校验和重复文件识别。
-- 编辑器正文同时保存结构化 JSON 和纯文本副本，后者用于摘要和搜索。M1 的 JSON 是 `{"version":1,"type":"doc","content":[{"type":"paragraph","text":"..."}]}`，未知高版本拒绝编辑。
+- 编辑器正文同时保存结构化 JSON 和纯文本副本，后者用于摘要和搜索。当前格式为 version 2，即 ProseMirror 文档，例如 `{"version":2,"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"标题"}]}]}`；version 1 把文字放在段落的 `text` 字段里，读取时自动升级为行内节点。未知高版本拒绝编辑，见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)。
 - `excerpt` 由 Rust 侧从 `content_text` 折叠空白后截取前 80 字符，不信任前端传入。
 - 数据库迁移必须带版本号，并在启动时按顺序执行；`user_version` 高于当前支持版本时启动失败并拒绝写入。
 

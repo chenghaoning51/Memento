@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Feather, Plus } from "lucide-react";
 import { createEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
-import { buildContentJson } from "../../lib/entryContent";
+import { readContent, writeContent } from "../../lib/entryContent";
 import { formatClockTime, formatLocalDate, toLocalDateString } from "../../lib/localDate";
+import type { JSONContent } from "@tiptap/core";
 import type { EntrySummary, SaveStatus } from "../../types/entry";
+import { EntryEditor } from "./EntryEditor";
 import { useAutosave } from "./useAutosave";
 
 type Draft = {
   id: string;
+  content: JSONContent;
   contentText: string;
 };
 
@@ -36,7 +39,7 @@ export function TodayPage() {
     const saved = await saveEntry({
       id: current.id,
       title: "",
-      contentJson: buildContentJson(current.contentText),
+      contentJson: writeContent(current.content),
       contentText: current.contentText,
     });
     setEntries((list) =>
@@ -62,7 +65,7 @@ export function TodayPage() {
       }
       try {
         const entry = await getEntry(id);
-        setDraft({ id: entry.id, contentText: entry.contentText });
+        setDraft({ id: entry.id, content: readContent(entry.contentJson), contentText: entry.contentText });
         setError(null);
       } catch (cause) {
         setError(String(cause));
@@ -89,7 +92,7 @@ export function TodayPage() {
     }
     try {
       const entry = await createEntry(entryDate);
-      setDraft({ id: entry.id, contentText: entry.contentText });
+      setDraft({ id: entry.id, content: readContent(entry.contentJson), contentText: entry.contentText });
       setError(null);
       await refreshList();
     } catch (cause) {
@@ -97,8 +100,8 @@ export function TodayPage() {
     }
   }, [entryDate, flush, refreshList]);
 
-  const onContentChange = (value: string) => {
-    setDraft((current) => (current ? { ...current, contentText: value } : current));
+  const onContentChange = (content: JSONContent, contentText: string) => {
+    setDraft((current) => (current ? { ...current, content, contentText } : current));
     schedule();
   };
 
@@ -151,13 +154,7 @@ export function TodayPage() {
           </div>
 
           {draft ? (
-            <textarea
-              className="entry-editor"
-              value={draft.contentText}
-              onChange={(event) => onContentChange(event.target.value)}
-              placeholder="今天发生了什么？"
-              aria-label="日记正文"
-            />
+            <EntryEditor key={draft.id} content={draft.content} onChange={onContentChange} />
           ) : (
             <div className="empty-page">
               <div className="empty-mark" aria-hidden="true">

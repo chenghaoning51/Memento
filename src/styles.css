@@ -380,27 +380,133 @@ button:focus-visible {
   font-size: 12px;
 }
 
-.entry-editor {
+.editor-shell {
+  display: flex;
   flex: 1;
-  width: 100%;
-  min-height: 380px;
-  margin: 18px 0;
-  padding: 0;
-  border: 0;
-  color: var(--ink);
-  background: transparent;
-  font-family: "Songti SC", "SimSun", serif;
-  font-size: 16px;
-  line-height: 1.9;
-  resize: none;
+  flex-direction: column;
+  margin: 14px 0 10px;
 }
 
-.entry-editor:focus {
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #ebe7dd;
+}
+
+.editor-tool {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: #8b8c86;
+  background: transparent;
+  cursor: pointer;
+}
+
+.editor-tool:hover {
+  color: var(--ink);
+  background: #f1efe8;
+}
+
+.editor-tool.is-active {
+  border-color: #d8dded;
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.editor-tool:disabled {
+  color: #c9c7c0;
+  background: transparent;
+  cursor: default;
+}
+
+.editor-tool-divider {
+  width: 1px;
+  height: 15px;
+  margin: 0 5px;
+  background: #e5e1d7;
+}
+
+.editor-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0 0;
+}
+
+.editor-link-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid #ddd9cd;
+  border-radius: 3px;
+  color: var(--ink);
+  background: #fbfaf6;
+  font-size: 12px;
+}
+
+.editor-link-input:focus {
+  border-color: #c2cbe4;
   outline: none;
 }
 
-.entry-editor::placeholder {
+.entry-editor {
+  flex: 1;
+  min-height: 360px;
+  padding: 18px 0 0;
+  color: var(--ink);
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 16px;
+  line-height: 1.9;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.entry-editor p {
+  margin: 0 0 12px;
+}
+
+.entry-editor h2 {
+  margin: 22px 0 10px;
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+}
+
+.entry-editor blockquote {
+  margin: 14px 0;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid #ccd5c9;
+  color: #5d635c;
+}
+
+.entry-editor blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.entry-editor hr {
+  margin: 22px 0;
+  border: 0;
+  border-top: 1px solid #e0dcd1;
+}
+
+.entry-editor a {
+  color: var(--blue);
+  text-decoration: underline;
+  text-decoration-color: #b9c2dc;
+  text-underline-offset: 2px;
+}
+
+.entry-editor p.is-empty::before {
+  float: left;
+  height: 0;
   color: #b5b3aa;
+  content: attr(data-placeholder);
+  pointer-events: none;
 }
 
 .primary-button {

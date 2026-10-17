@@ -7,9 +7,9 @@ use crate::entries::{repository, Entry, EntryDraft, EntrySummary};
 use crate::error::{AppError, AppResult};
 use crate::library::{Library, LibraryInfo};
 
-/// M1 的正文结构：一个空段落，带版本号供 M2 的编辑器升级。
+/// 新日记的空正文：一个空段落。版本 2 对应 ADR-0004 的 Tiptap 文档格式。
 const EMPTY_CONTENT_JSON: &str =
-    r#"{"version":1,"type":"doc","content":[{"type":"paragraph","text":""}]}"#;
+    r#"{"version":2,"type":"doc","content":[{"type":"paragraph"}]}"#;
 
 fn now_utc() -> String {
     OffsetDateTime::now_utc()

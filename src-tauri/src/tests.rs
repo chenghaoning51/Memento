@@ -9,7 +9,7 @@ use crate::error::AppError;
 use crate::library::Library;
 
 const EMPTY_CONTENT_JSON: &str =
-    r#"{"version":1,"type":"doc","content":[{"type":"paragraph","text":""}]}"#;
+    r#"{"version":2,"type":"doc","content":[{"type":"paragraph"}]}"#;
 const CREATED_AT: &str = "2026-10-17T08:00:00Z";
 
 fn temp_library_root(name: &str) -> PathBuf {

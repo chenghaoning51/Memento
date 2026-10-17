@@ -2,14 +2,15 @@
 
 ## 当前状态
 
-M1 已打通“创建 → 编辑 → 自动保存 → 关闭重开”的第一条可靠保存链路：
+M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一条可靠保存链路，M2 起正文换成结构化编辑器：
 
 - Rust 侧在应用数据目录下创建 `Memento Library/`，用 rusqlite（bundled）打开 `memento.db`，启用 WAL 与外键，并通过 `PRAGMA user_version` 顺序执行迁移（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。
 - 五个 Tauri 命令对前端可用：`library_info`、`list_entries`、`get_entry`、`create_entry`、`save_entry`；SQL 与业务规则只存在于 Rust 侧。
-- “今天”页是真实数据流：按本地日历日期列出当天日记，可新建与切换，正文使用原生 textarea 存纯文本，停止输入 800 ms 自动保存、连续输入最多 5 秒强制保存（见 [ADR-0003](../decisions/0003-editor-and-body-format.md)）。
+- “今天”页是真实数据流：按本地日历日期列出当天日记，可新建与切换，停止输入 800 ms 自动保存、连续输入最多 5 秒强制保存（见 [ADR-0003](../decisions/0003-editor-and-body-format.md)）。
+- 正文用 Tiptap 编辑，支持标题、引用、分隔线、链接、加粗、斜体和撤销重做；结构化 JSON 存 `content_json`，纯文本副本存 `content_text` 供摘要与后续搜索使用。正文格式当前为 version 2，旧的 version 1 正文在读取时自动升级（见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)）。
 - “设置”页显示数据目录、数据库文件路径与模式版本。
 
-尚未接入：富文本编辑器、附件目录与缩略图、标签、回收站、搜索、未来信件、导出备份、测试与 CI。导航中的对应入口仍是占位页。
+尚未接入：附件目录与缩略图、标签、回收站、搜索、未来信件、导出备份、前端测试与 CI。导航中的对应入口仍是占位页。
 
 ## 目标分层
 
@@ -70,4 +71,4 @@ M1 只使用 `memento.db`；其余目录在对应阶段创建，不预建空目�
 
 第一版只加入能够形成闭环的依赖。编辑器、SQLite、备份和应用锁分别引入，并在对应 ADR 中记录原因和迁移成本，避免在脚手架阶段提前锁定全部实现。
 
-当前已引入：`rusqlite`（bundled）、`time`、`uuid`。编辑器仍是原生 textarea，Tiptap 计划在 M2 引入。
+当前已引入：`rusqlite`（bundled）、`time`、`uuid`；前端已引入 Tiptap 3.32 作为正文编辑器。
