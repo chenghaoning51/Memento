@@ -24,7 +24,7 @@
 - CPU：AMD Ryzen AI 9 H 365 w/ Radeon 880M；内存 31.1 GB
 - WebView2：155.0.4283.60
 - 应用：开发构建 `src-tauri/target/debug/memento.exe`，版本 0.1.0
-- 提交：本轮结束时仓库尚无提交，按工作区内容验收；首次提交在本记录之后建立
+- 提交：验收时仓库尚无提交，按工作区内容验收；验收后建立首次提交 `f661f07`
 - 数据位置：`%APPDATA%\com.memento.app\Memento Library\memento.db`，`PRAGMA user_version = 1`，表只有 `entries`
 - 数据：全部为合成内容（同一天 3 篇中文日记），不含真实私人记录
 
