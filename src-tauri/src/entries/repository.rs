@@ -1,6 +1,6 @@
 use rusqlite::{Connection, OptionalExtension};
 
-use super::{DeletedEntry, Entry, EntryDraft, EntrySummary};
+use super::{DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary};
 use crate::error::{AppError, AppResult};
 
 const ENTRY_COLUMNS: &str = "id, entry_date, title, content_json, content_text, excerpt, cover_attachment_id,
@@ -67,6 +67,74 @@ pub fn list_by_date(connection: &Connection, entry_date: &str) -> AppResult<Vec<
          ORDER BY created_at_utc ASC, id ASC",
     )?;
     let rows = statement.query_map([entry_date], |row| {
+        Ok(EntrySummary {
+            id: row.get(0)?,
+            entry_date: row.get(1)?,
+            title: row.get(2)?,
+            excerpt: row.get(3)?,
+            cover_attachment_id: row.get(4)?,
+            created_at_utc: row.get(5)?,
+            updated_at_utc: row.get(6)?,
+        })
+    })?;
+
+    let mut entries = Vec::new();
+    for row in rows {
+        entries.push(row?);
+    }
+    Ok(entries)
+}
+
+/// 月历用：区间内每个有记录的本地日期、当天篇数与首图。
+pub fn list_dates(
+    connection: &Connection,
+    start_date: &str,
+    end_date: &str,
+) -> AppResult<Vec<EntryDateSummary>> {
+    let mut statement = connection.prepare(
+        "SELECT entry_date,
+                COUNT(*),
+                (SELECT cover_attachment_id
+                 FROM entries AS inner_entry
+                 WHERE inner_entry.entry_date = outer_entry.entry_date
+                   AND inner_entry.deleted_at_utc IS NULL
+                   AND inner_entry.cover_attachment_id IS NOT NULL
+                 ORDER BY inner_entry.created_at_utc ASC, inner_entry.id ASC
+                 LIMIT 1)
+         FROM entries AS outer_entry
+         WHERE entry_date BETWEEN ?1 AND ?2 AND deleted_at_utc IS NULL
+         GROUP BY entry_date
+         ORDER BY entry_date ASC",
+    )?;
+    let rows = statement.query_map([start_date, end_date], |row| {
+        Ok(EntryDateSummary {
+            entry_date: row.get(0)?,
+            entry_count: row.get(1)?,
+            cover_attachment_id: row.get(2)?,
+        })
+    })?;
+
+    let mut dates = Vec::new();
+    for row in rows {
+        dates.push(row?);
+    }
+    Ok(dates)
+}
+
+/// 时间线：按日记日期倒序、同一天内后写的在前。
+pub fn list_recent(
+    connection: &Connection,
+    limit: i64,
+    offset: i64,
+) -> AppResult<Vec<EntrySummary>> {
+    let mut statement = connection.prepare(
+        "SELECT id, entry_date, title, excerpt, cover_attachment_id, created_at_utc, updated_at_utc
+         FROM entries
+         WHERE deleted_at_utc IS NULL
+         ORDER BY entry_date DESC, created_at_utc DESC, id DESC
+         LIMIT ?1 OFFSET ?2",
+    )?;
+    let rows = statement.query_map([limit, offset], |row| {
         Ok(EntrySummary {
             id: row.get(0)?,
             entry_date: row.get(1)?,

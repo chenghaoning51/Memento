@@ -21,6 +21,13 @@ export type EntrySummary = {
   updatedAtUtc: string;
 };
 
+/** 月历格子：某天有几篇日记、用哪张图做提示。 */
+export type EntryDateSummary = {
+  entryDate: string;
+  entryCount: number;
+  coverAttachmentId: string | null;
+};
+
 export type EntryDraft = {
   id: string;
   title: string;

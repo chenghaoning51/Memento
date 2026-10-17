@@ -29,6 +29,15 @@ pub struct EntrySummary {
     pub updated_at_utc: String,
 }
 
+/// 月历与时间线用的日期摘要：某天有几篇、封面用哪张图。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EntryDateSummary {
+    pub entry_date: String,
+    pub entry_count: i64,
+    pub cover_attachment_id: Option<String>,
+}
+
 /// 回收站条目：正常列表之外再带上删除时间。
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

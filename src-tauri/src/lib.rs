@@ -30,6 +30,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::library_info,
             commands::list_entries,
+            commands::list_entry_dates,
+            commands::list_timeline,
             commands::get_entry,
             commands::create_entry,
             commands::save_entry,

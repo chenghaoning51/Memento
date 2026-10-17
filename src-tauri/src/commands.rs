@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::attachments::{self, repository as attachment_repository, Attachment};
-use crate::entries::{repository, DeletedEntry, Entry, EntryDraft, EntrySummary};
+use crate::entries::{repository, DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary};
 use crate::error::{AppError, AppResult};
 use crate::library::{Library, LibraryInfo};
 use crate::tags::{self, repository as tag_repository, Tag};
@@ -28,6 +28,26 @@ pub fn library_info(library: State<'_, Library>) -> AppResult<LibraryInfo> {
 #[tauri::command]
 pub fn list_entries(library: State<'_, Library>, entry_date: String) -> AppResult<Vec<EntrySummary>> {
     library.with_connection(|connection| repository::list_by_date(connection, &entry_date))
+}
+
+/// 月历用：某个月内每个有记录的日期。日期是本地日历日期，按字符串区间比较。
+#[tauri::command]
+pub fn list_entry_dates(
+    library: State<'_, Library>,
+    start_date: String,
+    end_date: String,
+) -> AppResult<Vec<EntryDateSummary>> {
+    library.with_connection(|connection| repository::list_dates(connection, &start_date, &end_date))
+}
+
+/// 时间线用：最近的日记，按日期倒序分批取。
+#[tauri::command]
+pub fn list_timeline(
+    library: State<'_, Library>,
+    limit: i64,
+    offset: i64,
+) -> AppResult<Vec<EntrySummary>> {
+    library.with_connection(|connection| repository::list_recent(connection, limit, offset))
 }
 
 #[tauri::command]

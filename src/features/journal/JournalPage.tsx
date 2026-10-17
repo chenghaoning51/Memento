@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather, Plus } from "lucide-react";
 import { attachmentSource } from "../../lib/attachmentSource";
 import { createEntry, deleteEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
 import { readContent, writeContent } from "../../lib/entryContent";
-import { formatClockTime, formatLocalDate, toLocalDateString } from "../../lib/localDate";
+import { formatCalendarDate, formatClockTime, formatLocalDate, parseLocalDate, toLocalDateString } from "../../lib/localDate";
 import type { JSONContent } from "@tiptap/core";
 import type { EntrySummary, SaveStatus } from "../../types/entry";
 import { EntryEditor } from "./EntryEditor";
@@ -24,14 +24,27 @@ const statusText: Record<SaveStatus, string> = {
   failed: "保存失败",
 };
 
-type TodayPageProps = {
+type JournalPageProps = {
+  /** 本地日历日期（YYYY-MM-DD）；缺省为今天。 */
+  entryDate?: string;
+  /** 从时间线点进来时，直接打开指定的那一篇。 */
+  entryId?: string;
+  /** 从时间线或月历进来时显示的返回入口。 */
+  back?: { label: string; onClick: () => void };
   registerLeaveGuard: (guard: (() => Promise<boolean>) | null) => void;
 };
 
-export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
-  const today = useMemo(() => new Date(), []);
-  const entryDate = toLocalDateString(today);
-  const dateLabel = formatLocalDate(today);
+/** 某一天的日记页：今天页与时间线点进来的日期共用同一套编辑、保存和切页规则。 */
+export function JournalPage({
+  entryDate: requestedDate,
+  entryId: requestedEntryId,
+  back,
+  registerLeaveGuard,
+}: JournalPageProps) {
+  const entryDate = requestedDate ?? toLocalDateString(new Date());
+  const isToday = entryDate === toLocalDateString(new Date());
+  const heading = isToday ? "今天" : formatCalendarDate(entryDate);
+  const listLabel = isToday ? "今天的日记" : "这一天的日记";
 
   const [entries, setEntries] = useState<EntrySummary[] | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -95,16 +108,18 @@ export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
     [flush],
   );
 
-  // 首屏只加载当天：切换日期属于 M3 的时间回看。
+  // 换到另一天时先清空旧草稿，再按新日期重载列表并打开当天最后一篇。
   useEffect(() => {
+    setDraft(null);
     void (async () => {
       const summaries = await listEntries(entryDate);
       setEntries(summaries);
-      if (summaries.length > 0) {
-        await openEntry(summaries[summaries.length - 1].id);
-      }
+      const target = summaries.some((item) => item.id === requestedEntryId)
+        ? requestedEntryId
+        : summaries[summaries.length - 1]?.id;
+      if (target) await openEntry(target);
     })();
-  }, [entryDate, openEntry]);
+  }, [entryDate, requestedEntryId, openEntry]);
 
   const startEntry = useCallback(async () => {
     if (!(await flush())) {
@@ -145,7 +160,7 @@ export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
     }
   }, [draft, flush, openEntry, refreshList]);
 
-  // 侧栏切页同样先落盘：失败就留在今天页，输入不丢（A04）。
+  // 侧栏切页同样先落盘：失败就留在当前日记，输入不丢（A04）。
   useEffect(() => {
     registerLeaveGuard(async () => {
       if (await flush()) return true;
@@ -161,19 +176,24 @@ export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
   };
 
   return (
-    <section className="today-page" aria-labelledby="page-title">
+    <section className="journal-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
+          {back && (
+            <button className="page-back" type="button" onClick={back.onClick}>
+              {back.label}
+            </button>
+          )}
           <p className="eyebrow">A PRIVATE JOURNAL</p>
-          <h1 id="page-title">今天</h1>
+          <h1 id="page-title">{heading}</h1>
         </div>
-        <time className="date-stamp" dateTime={entryDate}>{dateLabel}</time>
+        <time className="date-stamp" dateTime={entryDate}>{formatLocalDate(parseLocalDate(entryDate))}</time>
       </header>
 
       <div className="journal-layout">
-        <aside className="entry-list" aria-label="今天的日记">
+        <aside className="entry-list" aria-label={listLabel}>
           <div className="entry-list-head">
-            <span>今天的日记</span>
+            <span>{listLabel}</span>
             <button className="icon-button" type="button" onClick={() => void startEntry()} title="写一篇新日记">
               <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
               <span className="visually-hidden">写一篇新日记</span>
@@ -200,7 +220,7 @@ export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
             </ul>
           ) : (
             <p className="entry-list-empty">
-              {entries === null ? "正在读取…" : "今天还没有记录"}
+              {entries === null ? "正在读取…" : isToday ? "今天还没有记录" : "这一天没有记录"}
             </p>
           )}
         </aside>
@@ -221,10 +241,10 @@ export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
               <div className="empty-mark" aria-hidden="true">
                 <Feather size={23} strokeWidth={1.5} />
               </div>
-              <h2>今天还没有记录</h2>
-              <p>平常的一天，也可以留下一点痕迹。</p>
+              <h2>{isToday ? "今天还没有记录" : "这一天还没有记录"}</h2>
+              <p>{isToday ? "平常的一天，也可以留下一点痕迹。" : "补写这一天，也来得及。"}</p>
               <button className="primary-button" type="button" onClick={() => void startEntry()}>
-                写第一篇
+                {isToday ? "写第一篇" : "写这一天的第一篇"}
               </button>
             </div>
           )}

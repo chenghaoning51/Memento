@@ -15,14 +15,19 @@ export function formatLocalDate(date: Date): string {
   }).format(date);
 }
 
-/** 把 YYYY-MM-DD 显示成中文日期；不经过 Date 构造，避免时区把日期挪一天。 */
-export function formatCalendarDate(entryDate: string): string {
+/** 把 YYYY-MM-DD 还原成本地时区的当天零点，避免 UTC 解析把日期挪一天。 */
+export function parseLocalDate(entryDate: string): Date {
   const [year, month, day] = entryDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/** 把 YYYY-MM-DD 显示成中文日期。 */
+export function formatCalendarDate(entryDate: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(new Date(year, month - 1, day));
+  }).format(parseLocalDate(entryDate));
 }
 
 export function formatClockTime(isoUtc: string): string {

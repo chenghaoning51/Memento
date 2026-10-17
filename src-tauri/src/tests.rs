@@ -301,6 +301,83 @@ fn deleted_entry_keeps_body_attachments_and_tags() {
     std::fs::remove_dir_all(&root).ok();
 }
 
+/// A10：时间线按日期倒序分页，月历只统计当天未删除的日记并带上首图。
+#[test]
+fn timeline_and_calendar_read_entries_in_date_order() {
+    let root = temp_library_root("timeline");
+    let library = Library::open(root.clone()).unwrap();
+    let cover_id = Uuid::new_v4().to_string();
+
+    let dates = ["2026-10-15", "2026-10-17", "2026-10-15", "2026-10-16"];
+    for (index, entry_date) in dates.iter().enumerate() {
+        let id = Uuid::new_v4().to_string();
+        let created = format!("2026-10-17T08:0{index}:00Z");
+        library
+            .with_connection(|connection| {
+                repository::create(connection, &id, entry_date, EMPTY_CONTENT_JSON, &created)?;
+                if index == 1 {
+                    let draft = EntryDraft {
+                        id: id.clone(),
+                        title: String::new(),
+                        content_json: EMPTY_CONTENT_JSON.to_string(),
+                        content_text: String::new(),
+                        cover_attachment_id: Some(cover_id.clone()),
+                    };
+                    repository::save(connection, &draft, "", &created)?;
+                }
+                Ok(())
+            })
+            .unwrap();
+    }
+
+    // 一篇被软删除，不应出现在时间线和月历里。
+    let deleted_id = Uuid::new_v4().to_string();
+    library
+        .with_connection(|connection| {
+            repository::create(
+                connection,
+                &deleted_id,
+                "2026-10-16",
+                EMPTY_CONTENT_JSON,
+                "2026-10-17T08:10:00Z",
+            )?;
+            repository::set_deleted_at(connection, &deleted_id, Some("2026-10-17T09:00:00Z"))
+        })
+        .unwrap();
+
+    let timeline = library
+        .with_connection(|connection| repository::list_recent(connection, 3, 0))
+        .unwrap();
+    assert_eq!(
+        timeline
+            .iter()
+            .map(|entry| entry.entry_date.as_str())
+            .collect::<Vec<_>>(),
+        vec!["2026-10-17", "2026-10-16", "2026-10-15"]
+    );
+
+    let next_page = library
+        .with_connection(|connection| repository::list_recent(connection, 3, 3))
+        .unwrap();
+    assert_eq!(next_page.len(), 1);
+
+    let days = library
+        .with_connection(|connection| repository::list_dates(connection, "2026-10-01", "2026-10-31"))
+        .unwrap();
+    assert_eq!(
+        days.iter()
+            .map(|day| (day.entry_date.as_str(), day.entry_count))
+            .collect::<Vec<_>>(),
+        vec![("2026-10-15", 2), ("2026-10-16", 1), ("2026-10-17", 1)]
+    );
+    assert_eq!(
+        days[2].cover_attachment_id.as_deref(),
+        Some(cover_id.as_str())
+    );
+
+    std::fs::remove_dir_all(&root).ok();
+}
+
 fn sample_png(width: u32, height: u32) -> Vec<u8> {
     let image = image::RgbaImage::from_pixel(width, height, image::Rgba([120, 90, 60, 255]));
     let mut buffer = Vec::new();

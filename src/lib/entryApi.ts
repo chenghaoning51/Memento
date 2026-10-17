@@ -3,6 +3,7 @@ import type {
   Attachment,
   DeletedEntry,
   Entry,
+  EntryDateSummary,
   EntryDraft,
   EntrySummary,
   LibraryInfo,
@@ -15,6 +16,16 @@ export function libraryInfo(): Promise<LibraryInfo> {
 
 export function listEntries(entryDate: string): Promise<EntrySummary[]> {
   return invoke<EntrySummary[]>("list_entries", { entryDate });
+}
+
+/** 月历用：startDate 到 endDate（含）之间每个有记录的本地日期。 */
+export function listEntryDates(startDate: string, endDate: string): Promise<EntryDateSummary[]> {
+  return invoke<EntryDateSummary[]>("list_entry_dates", { startDate, endDate });
+}
+
+/** 时间线用：按日期倒序分批取日记。 */
+export function listTimeline(limit: number, offset: number): Promise<EntrySummary[]> {
+  return invoke<EntrySummary[]>("list_timeline", { limit, offset });
 }
 
 export function getEntry(id: string): Promise<Entry> {

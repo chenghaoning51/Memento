@@ -2,28 +2,28 @@
 
 - 规划基线：2026-10-17。
 - 目标：交付 Windows 上完全离线可用、内容可可靠保存并能完整恢复的 MVP。
-- 状态：M0、M1、M2 已完成，下一步 M3；除“当前基线”明确列出的能力外，下文均为待实施工作。
+- 状态：M0、M1、M2 已完成，M3-01 的时间线与月历已完成，下一步 M3-02 的检索；除“当前基线”明确列出的能力外，下文均为待实施工作。
 - 范围依据：[产品愿景](../product/vision.md)、[MVP 范围](../product/mvp-scope.md)。
 - 配套文档：[迭代流程](iteration-workflow.md)、[验收清单](acceptance.md)、[路线图](../roadmap.md)。
 
 ## 1. 当前基线与框架理解
 
-M1 之后已经形成“创建 → 编辑 → 自动保存 → 关闭重开”的保存闭环；M2 依次加入格式编辑、图片、标签与回收站，并用一轮完整回归确认了失败注入、强制结束与切页守卫。仍缺检索、信件、导出与备份。
+M1 之后已经形成“创建 → 编辑 → 自动保存 → 关闭重开”的保存闭环；M2 依次加入格式编辑、图片、标签与回收站，并用一轮完整回归确认了失败注入、强制结束与切页守卫；M3-01 补上时间线、月历与日期详情，同一天多篇、跨月跨年与无记录日期都能到达。仍缺检索、信件、导出与备份。
 
 | 层次 | 当前实现与证据 | 开发时需要补齐 |
 | --- | --- | --- |
 | 前端入口 | `src/main.tsx` 挂载 React，加载全局样式 | 保持入口轻量，不承载业务逻辑 |
-| 应用壳与导航 | `src/app/App.tsx` 通过组件状态切页；“今天”“回收站”与“设置”是真实页面，其余走 `features/placeholder/SectionPage.tsx` | 继续替换占位页，处理编辑中切页和日期定位 |
-| 功能页面 | `features/today/TodayPage.tsx` 接真实数据并带标签栏；`features/trash/TrashPage.tsx` 列出回收站；`features/settings/SettingsPage.tsx` 显示数据位置 | 时间浏览、搜索与未来信件 |
-| 应用服务与类型 | `src/lib/entryApi.ts` 封装命令，`src/lib/entryContent.ts` 维护正文 JSON，`src/lib/localDate.ts` 处理本地日历日期，`src/types/entry.ts` 定义共享类型 | 随新功能扩展服务层，保持 UI 不碰 SQL 和文件路径 |
-| 编辑与保存 | `src/features/today/useAutosave.ts`：800 ms 空闲保存、最多 5 秒强制保存、串行写入、失败重试、切页与关闭前 flush；`EntryEditor.tsx` 承载 Tiptap 工具栏与图片导入；`TagBar.tsx` 立即写库的标签增删 | 持续回归撤销、粘贴与标签交互 |
+| 应用壳与导航 | `src/app/App.tsx` 通过组件状态切页；“今天”“时间线”“时间地图”“回收站”与“设置”是真实页面，其余走 `features/placeholder/SectionPage.tsx`；从时间线或月历进入日记页时记录来源，用于返回与侧栏高亮 | 继续替换占位页，处理编辑中切页和检索入口 |
+| 功能页面 | `features/journal/JournalPage.tsx` 按传入日期接真实数据并带标签栏，兼作“今天”页与某一天的详情；`features/timeline/TimelinePage.tsx` 按日期倒序分批加载；`features/calendar/CalendarPage.tsx` 按月看有记录的日期；`features/trash/TrashPage.tsx` 列出回收站；`features/settings/SettingsPage.tsx` 显示数据位置 | 搜索与未来信件 |
+| 应用服务与类型 | `src/lib/entryApi.ts` 封装十五个命令，`src/lib/entryContent.ts` 维护正文 JSON，`src/lib/localDate.ts` 处理本地日历日期与月历解析，`src/types/entry.ts` 定义共享类型（含 `EntryDateSummary`） | 随新功能扩展服务层，保持 UI 不碰 SQL 和文件路径 |
+| 编辑与保存 | `src/features/journal/useAutosave.ts`：800 ms 空闲保存、最多 5 秒强制保存、串行写入、失败重试、切页与关闭前 flush；`EntryEditor.tsx` 承载 Tiptap 工具栏与图片导入；`TagBar.tsx` 立即写库的标签增删 | 持续回归撤销、粘贴与标签交互 |
 | 视觉基础 | `src/styles.css` 包含颜色令牌、排版与响应式布局 | 随真实交互补充组件和键盘操作，不以重做外观阻塞主流程 |
 | 前端依赖 | React 19、TypeScript 6、Vite 8、Tauri API 2、Lucide、Tiptap 3.32 | 新增依赖前完成 ADR |
-| 桌面入口 | `src-tauri/src/lib.rs` 在 setup 中打开 Library、注册十三个命令与 `attachment` 自定义协议 | 导入导出与备份命令 |
-| Rust 模块 | `db/migrations.rs` 顺序迁移、`library.rs` 连接与 WAL、`entries/repository.rs` 与 `attachments/repository.rs`、`tags/` 规范化与仓储、`attachments/mod.rs` 图片识别与缩略图、`commands.rs` 十三个命令、`error.rs` 统一错误 | 信件与备份 |
+| 桌面入口 | `src-tauri/src/lib.rs` 在 setup 中打开 Library、注册十五个命令与 `attachment` 自定义协议 | 导入导出与备份命令 |
+| Rust 模块 | `db/migrations.rs` 顺序迁移、`library.rs` 连接与 WAL、`entries/repository.rs` 与 `attachments/repository.rs`、`tags/` 规范化与仓储、`attachments/mod.rs` 图片识别与缩略图、`commands.rs` 十五个命令、`error.rs` 统一错误 | 信件与备份 |
 | Rust 依赖 | Tauri 2、Serde、Serde JSON、rusqlite（bundled）、time、uuid、sha2、image 0.25（只开 png/jpeg） | 按阶段选择，引入前写 ADR |
 | 权限与打包 | 窗口配置、应用标识和图标；capability 含 `core:default` 与 `core:window:allow-destroy`；CSP 当前为 `null` | 验证业务命令权限、内容加载边界与 Windows 安装升级 |
-| 质量基础 | `pnpm build`、`cargo check` 与 `cargo test`（7 个用例）通过；桌面验收见[迭代 001](iterations/iteration-001.md)、[迭代 002](iterations/iteration-002.md)、[迭代 003](iterations/iteration-003.md)与[迭代 004](iterations/iteration-004.md) | 前端测试、固定验收数据与 CI |
+| 质量基础 | `pnpm build`、`cargo check` 与 `cargo test`（8 个用例）通过；桌面验收见[迭代 001](iterations/iteration-001.md)、[迭代 002](iterations/iteration-002.md)、[迭代 003](iterations/iteration-003.md)、[迭代 004](iterations/iteration-004.md)与[迭代 005](iterations/iteration-005.md) | 前端测试、固定验收数据与 CI |
 
 `src/components/` 仍为空缺，等出现跨功能复用组件时再建立，避免空目录先行。仓库已有首个提交作为版本基线，Rust 侧有 `cargo test`，但前端仍无测试命令、也没有 CI 工作流；构建通过不代表持久化或桌面业务已经验证。
 
@@ -127,9 +127,11 @@ M0、M1 任务已完成，M2-01 已完成，M2-02 起与 M3–M6 任务初始状
 
 | 编号 | 任务与产出 | 完成依据 |
 | --- | --- | --- |
-| M3-01 | 日期范围查询、时间线、月历和日期详情 | 同一天多篇记录均可到达；跨月/年与无记录日期正确；日历具有首图或色块提示 |
+| M3-01 ✅ | 日期范围查询、时间线、月历和日期详情 | 同一天多篇记录均可到达；跨月/年与无记录日期正确；日历具有首图或色块提示 |
 | M3-02 | 中文短语搜索、标签和日期范围组合筛选；结果摘要与首图 | 沿用规范化子串搜索策略，定义并验证组合条件、排序和分页或分批加载行为 |
 | M3-03 | 检索结果更新、空/错状态和性能基线 | 修改、删除、恢复后结果不陈旧；[A10–A12、A21](acceptance.md#功能与可靠性验收矩阵) 通过 |
+
+M3-01 已完成：时间线按日记日期倒序分批加载（每批 40 篇，滚动到底自动追加），月历按月汇总有记录的日期并显示当天篇数与首图，点任意日期进入那一天的日记页，空日期可以直接补写。Rust 侧新增 `list_entry_dates` 与 `list_timeline` 两个只读命令，日期统计与分页排序都在 SQL 里完成，前端不拉全量数据。
 
 退出条件：能从关键词、标签和日期找到目标内容，并进入同一条真实日记；不引入未经验证的中文全文检索依赖。
 
@@ -206,10 +208,9 @@ M0、M1 任务已完成，M2-01 已完成，M2-02 起与 M3–M6 任务初始状
 
 ## 8. 紧接着开展的工作
 
-M2 已整体完成，下一轮进入 M3：
+M2 已整体完成，M3 的 M3-01 也已完成（见[迭代 005](iterations/iteration-005.md)），下一轮：
 
-1. M3-01：日期范围查询、时间线、月历与日期详情；同日多篇、跨月跨年与无记录日期都要能到达。
-2. M3-02：中文短语搜索与标签、日期范围组合筛选，定义排序与分批加载。
-3. M3-03：结果随修改、删除、恢复更新，补空/错状态与性能基线，A10–A12 通过。
+1. M3-02：中文短语搜索与标签、日期范围组合筛选，定义排序与分批加载；沿用规范化子串匹配，不引入中文分词依赖。
+2. M3-03：结果随修改、删除、恢复更新，补空/错状态与性能基线，A10–A12 与 A21 通过。
 
 附件写入顺序与备份一致性的结论已落在 [ADR-0005](../decisions/0005-attachment-files.md)，M5 的备份需要连同 `attachments/` 与 `thumbnails/` 一起打包。

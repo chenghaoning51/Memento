@@ -856,3 +856,222 @@ button:focus-visible {
     font-size: 12px;
   }
 }
+/* 时间线与月历共用：返回入口、日期分组与格子 */
+.page-back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 0;
+  border: 0;
+  color: var(--faint);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.page-back:hover {
+  color: var(--blue);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 26px 0 10px;
+}
+
+.timeline-day {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.timeline-date {
+  margin: 0;
+  padding-top: 9px;
+  color: var(--brown);
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.timeline-entries {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid var(--line);
+}
+
+.timeline-entry {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-left: 0;
+  border-radius: 0 4px 4px 0;
+  color: #565854;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.timeline-entry:hover {
+  background: #eeede7;
+}
+
+.timeline-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.timeline-dot {
+  width: 5px;
+  height: 5px;
+  margin-left: 17px;
+  border-radius: 50%;
+  background: #c9c6bb;
+}
+
+.timeline-excerpt {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-time {
+  color: var(--faint);
+  font-family: Georgia, serif;
+  font-size: 11px;
+}
+
+.timeline-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 0 4px;
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.calendar {
+  padding: 26px 0 10px;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 620px;
+}
+
+.calendar-month {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  max-width: 620px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-weekdays {
+  margin: 14px 0 6px;
+  color: var(--faint);
+  font-size: 11px;
+  text-align: center;
+}
+
+.calendar-cell {
+  position: relative;
+  display: flex;
+  min-height: 72px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 7px 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: #6f716c;
+  background: #fbfaf6;
+  cursor: pointer;
+}
+
+.calendar-cell:hover {
+  border-color: #cfd4e4;
+  background: #f0f2f8;
+}
+
+.calendar-cell.is-outside {
+  color: #b6b4ac;
+  background: transparent;
+}
+
+.calendar-cell.has-entries {
+  border-color: #d9d3c2;
+  background: #f6f3ea;
+}
+
+.calendar-cell.is-today {
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+.calendar-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.28;
+  object-fit: cover;
+}
+
+.calendar-day {
+  position: relative;
+  font-family: Georgia, serif;
+  font-size: 12px;
+}
+
+.calendar-cell.has-entries .calendar-day {
+  color: var(--ink);
+}
+
+.calendar-count {
+  position: relative;
+  padding: 1px 5px;
+  border-radius: 999px;
+  color: var(--brown);
+  background: rgb(146 118 95 / 10%);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .timeline-day {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .timeline-date {
+    padding-top: 0;
+    text-align: left;
+  }
+}
