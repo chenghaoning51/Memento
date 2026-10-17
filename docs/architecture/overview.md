@@ -1,0 +1,73 @@
+# 系统架构
+
+## 当前状态
+
+M1 已打通“创建 → 编辑 → 自动保存 → 关闭重开”的第一条可靠保存链路：
+
+- Rust 侧在应用数据目录下创建 `Memento Library/`，用 rusqlite（bundled）打开 `memento.db`，启用 WAL 与外键，并通过 `PRAGMA user_version` 顺序执行迁移（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。
+- 五个 Tauri 命令对前端可用：`library_info`、`list_entries`、`get_entry`、`create_entry`、`save_entry`；SQL 与业务规则只存在于 Rust 侧。
+- “今天”页是真实数据流：按本地日历日期列出当天日记，可新建与切换，正文使用原生 textarea 存纯文本，停止输入 800 ms 自动保存、连续输入最多 5 秒强制保存（见 [ADR-0003](../decisions/0003-editor-and-body-format.md)）。
+- “设置”页显示数据目录、数据库文件路径与模式版本。
+
+尚未接入：富文本编辑器、附件目录与缩略图、标签、回收站、搜索、未来信件、导出备份、测试与 CI。导航中的对应入口仍是占位页。
+
+## 目标分层
+
+```text
+React UI
+  -> application services
+    -> repositories / Tauri commands
+      -> SQLite + local attachment directory
+```
+
+### 前端
+
+```text
+src/
+  app/                应用壳、导航和页面入口
+  components/         跨功能复用的视觉组件
+  features/           按产品能力组织的页面和业务模块
+  lib/                日期、格式化、调用封装等基础能力
+  types/              跨模块共享的 TypeScript 类型
+  styles.css          全局设计令牌和基础样式
+```
+
+UI 不直接读写 SQLite 和文件系统。页面通过应用服务发起动作，应用服务再调用 Tauri 命令或仓储接口。
+
+### Rust / Tauri
+
+Rust 层负责本地数据边界：
+
+- 初始化和迁移 SQLite。
+- 原子写入日记、标签和附件元数据。
+- 保存附件、生成缩略图和清理孤立文件。
+- 导出、备份、校验和恢复。
+- 只暴露经过类型约束的 Tauri 命令。
+
+## 本地文件布局
+
+```text
+Memento Library/
+  memento.db
+  attachments/
+  thumbnails/
+  backups/
+  exports/
+  manifest.json
+```
+
+数据库保存结构化内容和附件元数据；原始图片不以 Base64 长期存储在数据库中。
+
+M1 只使用 `memento.db`；其余目录在对应阶段创建，不预建空目录。
+
+## 时间处理
+
+- `entry_date` 表示用户看到的本地日历日期，格式为 `YYYY-MM-DD`，由前端按本地日历计算后传给命令，不随修改或时区变化。
+- `created_at_utc`、`updated_at_utc`、`deleted_at_utc` 和信件开启时间保存 UTC 时间戳（RFC 3339）。
+- 未来信件额外保存创建时的时区，用于跨时区时解释用户原本的意图。
+
+## 依赖边界
+
+第一版只加入能够形成闭环的依赖。编辑器、SQLite、备份和应用锁分别引入，并在对应 ADR 中记录原因和迁移成本，避免在脚手架阶段提前锁定全部实现。
+
+当前已引入：`rusqlite`（bundled）、`time`、`uuid`。编辑器仍是原生 textarea，Tiptap 计划在 M2 引入。

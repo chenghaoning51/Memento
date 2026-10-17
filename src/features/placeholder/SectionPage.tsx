@@ -1,0 +1,25 @@
+import { pageTitles, type AppPage } from "../../app/navigation";
+
+const sectionCopy: Record<Exclude<AppPage, "today">, string> = {
+  timeline: "沿着时间，慢慢翻阅留下的片段。",
+  calendar: "从某一天重新走进那段生活。",
+  letters: "写给未来的信，会在约定的日子打开。",
+  collection: "收藏那些不想忘记的小东西。",
+  settings: "管理你的私人空间。",
+};
+
+export function SectionPage({ page }: { page: Exclude<AppPage, "today"> }) {
+  return (
+    <section className="section-page" aria-labelledby="page-title">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">MEMENTO ARCHIVE</p>
+          <h1 id="page-title">{pageTitles[page]}</h1>
+        </div>
+      </header>
+      <div className="section-empty">
+        <span>{sectionCopy[page]}</span>
+      </div>
+    </section>
+  );
+}
