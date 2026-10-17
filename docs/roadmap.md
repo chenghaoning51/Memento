@@ -21,9 +21,9 @@
 - 富文本编辑器、图片与标签；Tiptap 计划在 M2 引入。
 - 回收站、时间地图、搜索和未来信箱的数据流。
 - 导出、备份和恢复。
-- 自动化测试、CI 和 Windows 安装发布验收。
+- 前端测试、CI 和 Windows 安装发布验收（Rust 侧已有 `cargo test`）。
 
-前端构建和 Rust 检查已通过；M1 的 A01–A05、A15 桌面验收证据见[迭代记录](development/iterations/iteration-001.md)。导航中未接入的入口、版本号和占位页面均不代表功能完成。
+前端构建、Rust 检查和 3 个 Rust 测试已通过；M1 的 A01–A05、A15 桌面验收证据见[迭代记录](development/iterations/iteration-001.md)。导航中未接入的入口、版本号和占位页面均不代表功能完成。
 
 ## P0：MVP 交付阶段
 

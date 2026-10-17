@@ -23,9 +23,9 @@ M1 之后已经形成“创建 → 编辑 → 自动保存 → 关闭重开”�
 | Rust 模块 | `db/migrations.rs` 顺序迁移、`library.rs` 连接与 WAL、`entries/repository.rs` 仓储、`commands.rs` 五个命令、`error.rs` 统一错误 | 附件、标签、回收站、信件与备份 |
 | Rust 依赖 | Tauri 2、Serde、Serde JSON、rusqlite（bundled）、time、uuid | 按阶段选择，引入前写 ADR |
 | 权限与打包 | 窗口配置、应用标识和图标；capability 含 `core:default` 与 `core:window:allow-destroy`；CSP 当前为 `null` | 验证业务命令权限、内容加载边界与 Windows 安装升级 |
-| 质量基础 | `pnpm build` 与 `cargo check --manifest-path src-tauri/Cargo.toml` 通过；M1 桌面验收见[迭代记录](iterations/iteration-001.md) | 自动化测试、固定验收数据与 CI |
+| 质量基础 | `pnpm build`、`cargo check` 与 `cargo test`（3 个用例）通过；M1 桌面验收见[迭代记录](iterations/iteration-001.md) | 前端测试、固定验收数据与 CI |
 
-`src/components/` 仍为空缺，等出现跨功能复用组件时再建立，避免空目录先行。仓库已有首个提交作为版本基线，但没有测试命令和 CI 工作流；构建通过不代表持久化或桌面业务已经验证。
+`src/components/` 仍为空缺，等出现跨功能复用组件时再建立，避免空目录先行。仓库已有首个提交作为版本基线，Rust 侧有 `cargo test`，但前端仍无测试命令、也没有 CI 工作流；构建通过不代表持久化或桌面业务已经验证。
 
 后续沿用既有[系统架构](../architecture/overview.md)：
 
