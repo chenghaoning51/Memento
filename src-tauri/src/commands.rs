@@ -5,7 +5,9 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::attachments::{self, repository as attachment_repository, Attachment};
-use crate::entries::{repository, DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary};
+use crate::entries::{
+    repository, DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary, SearchQuery,
+};
 use crate::error::{AppError, AppResult};
 use crate::library::{Library, LibraryInfo};
 use crate::tags::{self, repository as tag_repository, Tag};
@@ -50,6 +52,17 @@ pub fn list_timeline(
     library.with_connection(|connection| repository::list_recent(connection, limit, offset))
 }
 
+/// 搜索：关键词子串、标签交集与日期范围可以任意组合，结果按日期倒序分批返回。
+#[tauri::command]
+pub fn search_entries(library: State<'_, Library>, query: SearchQuery) -> AppResult<Vec<EntrySummary>> {
+    library.with_connection(|connection| repository::search(connection, &query))
+}
+
+#[tauri::command]
+pub fn list_tags(library: State<'_, Library>) -> AppResult<Vec<Tag>> {
+    library.with_connection(tag_repository::list_all)
+}
+
 #[tauri::command]
 pub fn get_entry(library: State<'_, Library>, id: String) -> AppResult<Entry> {
     library.with_connection(|connection| repository::require(connection, &id))
@@ -69,9 +82,10 @@ pub fn create_entry(library: State<'_, Library>, entry_date: String) -> AppResul
 pub fn save_entry(library: State<'_, Library>, draft: EntryDraft) -> AppResult<Entry> {
     let now = now_utc();
     let excerpt = repository::build_excerpt(&draft.content_text);
+    let search_text = repository::search_text(&draft.title, &draft.content_text);
 
     library.with_connection(|connection| {
-        if !repository::save(connection, &draft, &excerpt, &now)? {
+        if !repository::save(connection, &draft, &excerpt, &search_text, &now)? {
             return Err(AppError::MissingEntry(draft.id.clone()));
         }
         repository::require(connection, &draft.id)

@@ -7,6 +7,7 @@ import type {
   EntryDraft,
   EntrySummary,
   LibraryInfo,
+  SearchQuery,
   Tag,
 } from "../types/entry";
 
@@ -26,6 +27,15 @@ export function listEntryDates(startDate: string, endDate: string): Promise<Entr
 /** 时间线用：按日期倒序分批取日记。 */
 export function listTimeline(limit: number, offset: number): Promise<EntrySummary[]> {
   return invoke<EntrySummary[]>("list_timeline", { limit, offset });
+}
+
+/** 搜索：关键词、标签与日期范围可以任意组合。 */
+export function searchEntries(query: SearchQuery): Promise<EntrySummary[]> {
+  return invoke<EntrySummary[]>("search_entries", { query });
+}
+
+export function listTags(): Promise<Tag[]> {
+  return invoke<Tag[]>("list_tags");
 }
 
 export function getEntry(id: string): Promise<Entry> {

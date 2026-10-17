@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Clock3,
   MailOpen,
+  Search,
   Settings2,
   SunMedium,
   Trash2,
@@ -13,6 +14,7 @@ export type AppPage =
   | "today"
   | "timeline"
   | "calendar"
+  | "search"
   | "letters"
   | "collection"
   | "trash"
@@ -28,6 +30,7 @@ export const primaryNavigation: NavigationItem[] = [
   { id: "today", label: "今天", icon: SunMedium },
   { id: "timeline", label: "时间线", icon: Clock3 },
   { id: "calendar", label: "时间地图", icon: CalendarDays },
+  { id: "search", label: "搜索", icon: Search },
   { id: "letters", label: "未来信箱", icon: MailOpen },
   { id: "collection", label: "收藏册", icon: Bookmark },
   { id: "trash", label: "回收站", icon: Trash2 },
@@ -41,6 +44,7 @@ export const pageTitles: Record<AppPage, string> = {
   today: "今天",
   timeline: "时间线",
   calendar: "时间地图",
+  search: "搜索",
   letters: "未来信箱",
   collection: "收藏册",
   trash: "回收站",

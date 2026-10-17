@@ -28,6 +28,16 @@ export type EntryDateSummary = {
   coverAttachmentId: string | null;
 };
 
+/** 搜索条件：关键词为空表示不限，标签取交集，日期区间含两端。 */
+export type SearchQuery = {
+  text: string;
+  tagIds: string[];
+  startDate: string;
+  endDate: string;
+  limit: number;
+  offset: number;
+};
+
 export type EntryDraft = {
   id: string;
   title: string;

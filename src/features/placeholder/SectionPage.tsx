@@ -1,6 +1,9 @@
 import { pageTitles, type AppPage } from "../../app/navigation";
 
-type PlaceholderPage = Exclude<AppPage, "today" | "timeline" | "calendar" | "trash" | "settings">;
+type PlaceholderPage = Exclude<
+  AppPage,
+  "today" | "timeline" | "calendar" | "search" | "trash" | "settings"
+>;
 
 const sectionCopy: Record<PlaceholderPage, string> = {
   letters: "写给未来的信，会在约定的日子打开。",

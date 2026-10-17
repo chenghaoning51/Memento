@@ -5,6 +5,7 @@ use rusqlite::Connection;
 use serde::Serialize;
 
 use crate::db::migrations;
+use crate::entries;
 use crate::error::AppResult;
 
 /// 应用数据目录里的 Library 根：数据库、附件、缩略图、备份和导出都放在这里。
@@ -30,7 +31,12 @@ impl Library {
         connection.pragma_update(None, "journal_mode", "WAL")?;
         connection.pragma_update(None, "foreign_keys", "ON")?;
 
+        let previous_version = migrations::schema_version(&connection)?;
         migrations::migrate(&mut connection)?;
+        // v4 之前没有搜索列，升级时按现有标题与正文回填一次。
+        if previous_version < 4 {
+            entries::repository::rebuild_search_text(&connection)?;
+        }
 
         Ok(Self {
             root,

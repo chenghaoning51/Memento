@@ -26,6 +26,24 @@ pub fn list_for_entry(connection: &Connection, entry_id: &str) -> AppResult<Vec<
     Ok(tags)
 }
 
+/// 搜索页的标签筛选列表：按规范化名排序，与输入时的去重口径一致。
+pub fn list_all(connection: &Connection) -> AppResult<Vec<Tag>> {
+    let mut statement =
+        connection.prepare("SELECT id, name FROM tags ORDER BY normalized_name ASC")?;
+    let rows = statement.query_map([], |row| {
+        Ok(Tag {
+            id: row.get(0)?,
+            name: row.get(1)?,
+        })
+    })?;
+
+    let mut tags = Vec::new();
+    for row in rows {
+        tags.push(row?);
+    }
+    Ok(tags)
+}
+
 /// 加标签：同名（规范化后）的标签复用已有记录，重复加入同一篇日记时保持幂等。
 pub fn add(connection: &Connection, entry_id: &str, name: &str) -> AppResult<()> {
     let normalized_name = normalized(name);

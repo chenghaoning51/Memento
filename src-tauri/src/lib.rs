@@ -32,6 +32,8 @@ pub fn run() {
             commands::list_entries,
             commands::list_entry_dates,
             commands::list_timeline,
+            commands::search_entries,
+            commands::list_tags,
             commands::get_entry,
             commands::create_entry,
             commands::save_entry,

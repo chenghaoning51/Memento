@@ -29,3 +29,4 @@
 - [0004：用 Tiptap 承载正文编辑，正文格式升到 v2](0004-tiptap-editor-and-content-v2.md)
 - [0005：图片存为附件文件，正文只记附件 ID](0005-attachment-files.md)
 - [0006：标签存独立表，日记只做软删除](0006-tags-and-soft-delete.md)
+- [0007：用折叠小写的搜索列做子串匹配](0007-search-strategy.md)

@@ -1,6 +1,6 @@
 use rusqlite::{Connection, OptionalExtension};
 
-use super::{DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary};
+use super::{DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary, SearchQuery};
 use crate::error::{AppError, AppResult};
 
 const ENTRY_COLUMNS: &str = "id, entry_date, title, content_json, content_text, excerpt, cover_attachment_id,
@@ -196,11 +196,13 @@ pub fn save(
     connection: &Connection,
     draft: &EntryDraft,
     excerpt: &str,
+    search_text: &str,
     now_utc: &str,
 ) -> AppResult<bool> {
     let changed = connection.execute(
         "UPDATE entries
-         SET title = ?2, content_json = ?3, content_text = ?4, excerpt = ?5, cover_attachment_id = ?6, updated_at_utc = ?7
+         SET title = ?2, content_json = ?3, content_text = ?4, excerpt = ?5, cover_attachment_id = ?6,
+             search_text = ?7, updated_at_utc = ?8
          WHERE id = ?1",
         rusqlite::params![
             draft.id,
@@ -209,6 +211,7 @@ pub fn save(
             draft.content_text,
             excerpt,
             draft.cover_attachment_id,
+            search_text,
             now_utc,
         ],
     )?;
@@ -228,4 +231,120 @@ pub fn build_excerpt(content_text: &str) -> String {
         .chars()
         .take(80)
         .collect()
+}
+
+/// 搜索列：标题与正文折叠空白后转小写，用换行分隔，避免标题末字与正文首字拼成一个词。
+pub fn search_text(title: &str, content_text: &str) -> String {
+    let title = collapse(title);
+    let body = collapse(content_text);
+    match (title.is_empty(), body.is_empty()) {
+        (true, _) => body,
+        (false, true) => title,
+        (false, false) => format!("{title}\n{body}"),
+    }
+}
+
+fn collapse(text: &str) -> String {
+    text.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+/// LIKE 里的特殊字符要转义，否则用户输入的 % 和 _ 会变成通配符。
+fn escape_like(text: &str) -> String {
+    text.replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
+/// 搜索：关键词子串 + 标签交集 + 日期范围，按日期倒序分批取。
+pub fn search(connection: &Connection, query: &SearchQuery) -> AppResult<Vec<EntrySummary>> {
+    let mut sql = String::from(
+        "SELECT id, entry_date, title, excerpt, cover_attachment_id, created_at_utc, updated_at_utc
+         FROM entries
+         WHERE deleted_at_utc IS NULL",
+    );
+    let mut values: Vec<rusqlite::types::Value> = Vec::new();
+
+    let text = collapse(&query.text);
+    if !text.is_empty() {
+        values.push(rusqlite::types::Value::Text(format!("%{}%", escape_like(&text))));
+        sql.push_str(&format!(" AND search_text LIKE ?{} ESCAPE '\\'", values.len()));
+    }
+
+    if !query.start_date.is_empty() {
+        values.push(rusqlite::types::Value::Text(query.start_date.clone()));
+        sql.push_str(&format!(" AND entry_date >= ?{}", values.len()));
+    }
+
+    if !query.end_date.is_empty() {
+        values.push(rusqlite::types::Value::Text(query.end_date.clone()));
+        sql.push_str(&format!(" AND entry_date <= ?{}", values.len()));
+    }
+
+    if !query.tag_ids.is_empty() {
+        let mut placeholders = Vec::new();
+        for tag_id in &query.tag_ids {
+            values.push(rusqlite::types::Value::Text(tag_id.clone()));
+            placeholders.push(format!("?{}", values.len()));
+        }
+        sql.push_str(&format!(
+            " AND (SELECT COUNT(DISTINCT et.tag_id) FROM entry_tags et
+                   WHERE et.entry_id = entries.id AND et.tag_id IN ({})) = {}",
+            placeholders.join(", "),
+            query.tag_ids.len()
+        ));
+    }
+
+    values.push(rusqlite::types::Value::Integer(query.limit));
+    let limit_index = values.len();
+    values.push(rusqlite::types::Value::Integer(query.offset));
+    let offset_index = values.len();
+    sql.push_str(&format!(
+        " ORDER BY entry_date DESC, created_at_utc DESC, id DESC LIMIT ?{limit_index} OFFSET ?{offset_index}"
+    ));
+
+    let mut statement = connection.prepare(&sql)?;
+    let rows = statement.query_map(rusqlite::params_from_iter(values.iter()), |row| {
+        Ok(EntrySummary {
+            id: row.get(0)?,
+            entry_date: row.get(1)?,
+            title: row.get(2)?,
+            excerpt: row.get(3)?,
+            cover_attachment_id: row.get(4)?,
+            created_at_utc: row.get(5)?,
+            updated_at_utc: row.get(6)?,
+        })
+    })?;
+
+    let mut entries = Vec::new();
+    for row in rows {
+        entries.push(row?);
+    }
+    Ok(entries)
+}
+
+/// 迁移到 v4 后回填旧日记的搜索列。只跑一次，之后由 save 维护。
+pub fn rebuild_search_text(connection: &Connection) -> AppResult<()> {
+    let mut statement = connection.prepare("SELECT id, title, content_text FROM entries")?;
+    let rows = statement.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+        ))
+    })?;
+
+    let mut updates = Vec::new();
+    for row in rows {
+        updates.push(row?);
+    }
+    for (id, title, content_text) in updates {
+        connection.execute(
+            "UPDATE entries SET search_text = ?2 WHERE id = ?1",
+            rusqlite::params![id, search_text(&title, &content_text)],
+        )?;
+    }
+    Ok(())
 }

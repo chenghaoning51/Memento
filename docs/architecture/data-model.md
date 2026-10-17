@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表，M2-03 的迁移 v3 加入 `tags` 与 `entry_tags`。当前实际落地的四张表：
+M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表，M2-03 的迁移 v3 加入 `tags` 与 `entry_tags`，M3-02 的迁移 v4 给 `entries` 加 `search_text` 列。当前实际落地的四张表：
 
 ```sql
 CREATE TABLE entries (
@@ -12,6 +12,7 @@ CREATE TABLE entries (
   content_json        TEXT NOT NULL,
   content_text        TEXT NOT NULL DEFAULT '',
   excerpt             TEXT NOT NULL DEFAULT '',
+  search_text         TEXT NOT NULL DEFAULT '',
   layout_style        TEXT NOT NULL DEFAULT 'default',
   cover_attachment_id TEXT,
   created_at_utc      TEXT NOT NULL,
@@ -90,11 +91,12 @@ settings
 - 附件保存 SHA-256，用于备份校验和重复文件识别。原图复制进 `attachments/<entry_id>/<attachment_id>.<ext>`，缩略图在 `thumbnails/<attachment_id>.jpg`；表里只存相对路径，不存绝对路径。附件行与文件的一致性由导入顺序保证（先文件后行，失败回滚文件），删除图片节点或软删除日记都不自动清理附件，见 [ADR-0005](../decisions/0005-attachment-files.md)。
 - 编辑器正文同时保存结构化 JSON 和纯文本副本，后者用于摘要和搜索。当前格式为 version 2，即 ProseMirror 文档，例如 `{"version":2,"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"标题"}]}]}`；version 1 把文字放在段落的 `text` 字段里，读取时自动升级为行内节点。未知高版本拒绝编辑，见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)。
 - `excerpt` 由 Rust 侧从 `content_text` 折叠空白后截取前 80 字符，不信任前端传入。
+- `search_text` 是派生列：标题与正文各自折叠空白后转小写，用换行连接。每次保存与 `excerpt` 在同一次 UPDATE 里重算；迁移 v4 时对旧库按现有标题与正文回填一次。查询用转义后的 `LIKE` 子串匹配，`%`、`_`、`\` 按字面处理。
 - 数据库迁移必须带版本号，并在启动时按顺序执行；`user_version` 高于当前支持版本时启动失败并拒绝写入。
 
 ## 搜索策略
 
-第一版先实现标题、正文纯文本的规范化子串搜索，加上标签和日期过滤。SQLite 默认 FTS5 分词对中文并不天然可靠，达到较大数据量后再评估中文分词或 n-gram 索引。
+第一版实现标题、正文纯文本的规范化子串搜索，加上标签交集与日期范围过滤，三类条件在同一条 SQL 里用 `AND` 组合，结果按 `entry_date DESC, created_at_utc DESC, id DESC` 分页。SQLite 默认 FTS5 分词对中文并不天然可靠，达到较大数据量后再评估中文分词或 n-gram 索引；取舍与代价见 [ADR-0007](../decisions/0007-search-strategy.md)。
 
 ## 备份格式
 

@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::attachments::{self, repository as attachment_repository, Attachment};
 use crate::db::migrations;
-use crate::entries::{repository, EntryDraft};
+use crate::entries::{repository, EntryDraft, SearchQuery};
 use crate::error::AppError;
 use crate::library::Library;
 use crate::tags::{self, repository as tag_repository};
@@ -57,9 +57,16 @@ fn saved_entry_survives_reopen() {
             cover_attachment_id: None,
         };
         let excerpt = repository::build_excerpt(&draft.content_text);
+        let search_text = repository::search_text(&draft.title, &draft.content_text);
         let saved = library
             .with_connection(|connection| {
-                repository::save(connection, &draft, &excerpt, "2026-10-17T08:01:00Z")
+                repository::save(
+                    connection,
+                    &draft,
+                    &excerpt,
+                    &search_text,
+                    "2026-10-17T08:01:00Z",
+                )
             })
             .unwrap();
         assert!(saved);
@@ -323,7 +330,7 @@ fn timeline_and_calendar_read_entries_in_date_order() {
                         content_text: String::new(),
                         cover_attachment_id: Some(cover_id.clone()),
                     };
-                    repository::save(connection, &draft, "", &created)?;
+                    repository::save(connection, &draft, "", "", &created)?;
                 }
                 Ok(())
             })
@@ -376,6 +383,163 @@ fn timeline_and_calendar_read_entries_in_date_order() {
     );
 
     std::fs::remove_dir_all(&root).ok();
+}
+
+/// A11：关键词、标签与日期范围可以组合筛选，软删除的日记不出现在结果里。
+#[test]
+fn search_matches_text_tags_and_dates_together() {
+    let root = temp_library_root("search");
+    let library = Library::open(root.clone()).unwrap();
+
+    let rainy = Uuid::new_v4().to_string();
+    let sunny = Uuid::new_v4().to_string();
+    let older = Uuid::new_v4().to_string();
+    let deleted = Uuid::new_v4().to_string();
+
+    write_entry(
+        &library,
+        &rainy,
+        "2026-10-17",
+        "雨天",
+        "今天下雨了。窗外的梧桐叶被打湿。",
+        "2026-10-17T08:00:00Z",
+    );
+    write_entry(
+        &library,
+        &sunny,
+        "2026-10-16",
+        "",
+        "下午天晴，晒被子。",
+        "2026-10-16T08:00:00Z",
+    );
+    write_entry(
+        &library,
+        &older,
+        "2026-09-20",
+        "",
+        "八月桂花香。",
+        "2026-09-20T08:00:00Z",
+    );
+    write_entry(
+        &library,
+        &deleted,
+        "2026-10-15",
+        "",
+        "下雨天删掉的记录。",
+        "2026-10-15T08:00:00Z",
+    );
+
+    library
+        .with_connection(|connection| {
+            tag_repository::add(connection, &rainy, "天气")?;
+            tag_repository::add(connection, &rainy, "散步")?;
+            tag_repository::add(connection, &sunny, "天气")?;
+            tag_repository::add(connection, &deleted, "天气")?;
+            repository::set_deleted_at(connection, &deleted, Some("2026-10-17T09:00:00Z"))
+        })
+        .unwrap();
+
+    let weather_tag = library
+        .with_connection(tag_repository::list_all)
+        .unwrap()
+        .into_iter()
+        .find(|tag| tag.name == "天气")
+        .unwrap();
+
+    let search = |query: SearchQuery| {
+        library
+            .with_connection(|connection| repository::search(connection, &query))
+            .unwrap()
+    };
+    let query = |text: &str, tag_ids: Vec<String>, start: &str, end: &str| SearchQuery {
+        text: text.to_string(),
+        tag_ids,
+        start_date: start.to_string(),
+        end_date: end.to_string(),
+        limit: 40,
+        offset: 0,
+    };
+
+    // 只按关键词：软删除的日记不出现，大小写与空白不影响匹配。
+    let hits = search(query("下雨", vec![], "", ""));
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].id, rainy);
+
+    // 只按标签：两篇未删除的日记都命中。
+    let hits = search(query("", vec![weather_tag.id.clone()], "", ""));
+    assert_eq!(
+        hits.iter().map(|entry| entry.id.as_str()).collect::<Vec<_>>(),
+        vec![rainy.as_str(), sunny.as_str()]
+    );
+
+    // 标签取交集：同时有「天气」和「散步」的只有一篇。
+    let walk_tag = library
+        .with_connection(tag_repository::list_all)
+        .unwrap()
+        .into_iter()
+        .find(|tag| tag.name == "散步")
+        .unwrap();
+    let hits = search(query(
+        "",
+        vec![weather_tag.id.clone(), walk_tag.id.clone()],
+        "",
+        "",
+    ));
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].id, rainy);
+
+    // 日期范围含两端：9 月的那篇落在区间外。
+    let hits = search(query("", vec![], "2026-10-16", "2026-10-17"));
+    assert_eq!(
+        hits.iter().map(|entry| entry.id.as_str()).collect::<Vec<_>>(),
+        vec![rainy.as_str(), sunny.as_str()]
+    );
+
+    // 组合条件：关键词 + 标签 + 日期。
+    let hits = search(query(
+        "下雨",
+        vec![weather_tag.id.clone()],
+        "2026-10-16",
+        "2026-10-17",
+    ));
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].id, rainy);
+    assert_eq!(hits[0].excerpt, "今天下雨了。窗外的梧桐叶被打湿。");
+
+    // 标题也参与匹配，且 % 不是通配符。
+    assert_eq!(search(query("雨天", vec![], "", "")).len(), 1);
+    assert_eq!(search(query("%", vec![], "", "")).len(), 0);
+
+    // 分页：一次只取一篇时按日期倒序。
+    let mut paged = query("", vec![], "", "");
+    paged.limit = 1;
+    let first = search(paged.clone());
+    paged.offset = 1;
+    let second = search(paged);
+    assert_eq!(first[0].id, rainy);
+    assert_eq!(second[0].id, sunny);
+
+    std::fs::remove_dir_all(&root).ok();
+}
+
+fn write_entry(library: &Library, id: &str, entry_date: &str, title: &str, text: &str, created: &str) {
+    let draft = EntryDraft {
+        id: id.to_string(),
+        title: title.to_string(),
+        content_json: EMPTY_CONTENT_JSON.to_string(),
+        content_text: text.to_string(),
+        cover_attachment_id: None,
+    };
+    let excerpt = repository::build_excerpt(text);
+    let search_text = repository::search_text(title, text);
+
+    library
+        .with_connection(|connection| {
+            repository::create(connection, id, entry_date, EMPTY_CONTENT_JSON, created)?;
+            repository::save(connection, &draft, &excerpt, &search_text, created)?;
+            Ok(())
+        })
+        .unwrap();
 }
 
 fn sample_png(width: u32, height: u32) -> Vec<u8> {

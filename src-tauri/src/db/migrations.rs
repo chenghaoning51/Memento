@@ -45,6 +45,8 @@ const MIGRATIONS: &[&str] = &[
         PRIMARY KEY (entry_id, tag_id)
      );
      CREATE INDEX entry_tags_by_tag ON entry_tags (tag_id);",
+    // v4：搜索列。标题与正文折叠空白、转小写后拼成一段文本，查询时做子串匹配。
+    "ALTER TABLE entries ADD COLUMN search_text TEXT NOT NULL DEFAULT '';",
 ];
 
 pub fn target_version() -> i64 {

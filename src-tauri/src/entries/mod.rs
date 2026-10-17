@@ -50,6 +50,18 @@ pub struct DeletedEntry {
     pub deleted_at_utc: String,
 }
 
+/// 搜索条件：关键词为空表示不限，标签取交集，日期区间含两端。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchQuery {
+    pub text: String,
+    pub tag_ids: Vec<String>,
+    pub start_date: String,
+    pub end_date: String,
+    pub limit: i64,
+    pub offset: i64,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryDraft {

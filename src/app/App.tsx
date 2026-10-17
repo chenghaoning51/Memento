@@ -4,6 +4,7 @@ import type { AppPage } from "./navigation";
 import { CalendarPage } from "../features/calendar/CalendarPage";
 import { JournalPage } from "../features/journal/JournalPage";
 import { SectionPage } from "../features/placeholder/SectionPage";
+import { SearchPage } from "../features/search/SearchPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { TimelinePage } from "../features/timeline/TimelinePage";
 import { TrashPage } from "../features/trash/TrashPage";
@@ -12,12 +13,13 @@ import { TrashPage } from "../features/trash/TrashPage";
 type JournalTarget = {
   entryDate: string;
   entryId?: string;
-  back: Extract<AppPage, "timeline" | "calendar">;
+  back: Extract<AppPage, "timeline" | "calendar" | "search">;
 };
 
 const backLabels: Record<JournalTarget["back"], string> = {
   timeline: "返回时间线",
   calendar: "返回时间地图",
+  search: "返回搜索",
 };
 
 export default function App() {
@@ -68,11 +70,17 @@ export default function App() {
         <TimelinePage onOpenEntry={(entryDate, entryId) => openJournal("timeline", entryDate, entryId)} />
       )}
       {page === "calendar" && <CalendarPage onOpenDate={(entryDate) => openJournal("calendar", entryDate)} />}
+      {page === "search" && (
+        <SearchPage onOpenEntry={(entryDate, entryId) => openJournal("search", entryDate, entryId)} />
+      )}
       {page === "trash" && <TrashPage />}
       {page === "settings" && <SettingsPage />}
-      {page !== "today" && page !== "timeline" && page !== "calendar" && page !== "trash" && page !== "settings" && (
-        <SectionPage page={page} />
-      )}
+      {page !== "today" &&
+        page !== "timeline" &&
+        page !== "calendar" &&
+        page !== "search" &&
+        page !== "trash" &&
+        page !== "settings" && <SectionPage page={page} />}
     </AppShell>
   );
 }

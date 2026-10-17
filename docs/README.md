@@ -23,7 +23,7 @@
 ## 当前阅读顺序
 
 1. [产品愿景](product/vision.md)
-2. [MVP 范围](product/mvp-scope.md)与场景细化：[日记](product/journal-entry.md)、[时间回看](product/time-browsing.md)、[未来信件](product/letters.md)、[导出备份恢复](product/backup-and-export.md)
+2. [MVP 范围](product/mvp-scope.md)与场景细化：[日记](product/journal-entry.md)、[时间回看](product/time-browsing.md)、[搜索与筛选](product/search.md)、[未来信件](product/letters.md)、[导出备份恢复](product/backup-and-export.md)
 3. [系统架构](architecture/overview.md)
 4. [开发环境](development/getting-started.md)
 5. [产品路线图](roadmap.md)
@@ -38,4 +38,4 @@
 - 迭代流程定义开工条件、开发节奏、完成定义与缺陷处理。
 - 验收清单提供可复现的场景和发布门槛；执行结果记录在实际迭代文档中。
 
-M0（开发准备与关键决策）、M1（第一条可靠保存链路）与 M2（日记编辑闭环）已完成：产品场景细化、SQLite 与编辑器选型 ADR、最小质量流程与版本基线、真实 SQLite 持久化与自动保存、M2-01 的结构化正文编辑器、M2-02 的图片附件、M2-03 的标签与回收站、M2-04 的 A02–A09 回归与切页守卫。M3 已开始：M3-01 的时间线、月历与日期详情已完成，下一步 M3-02 的检索与筛选。M4–M6 待实施；文档中的验收目标不代表已经通过，实际验收证据记录在 `development/iterations/` 下的迭代记录中。
+M0（开发准备与关键决策）、M1（第一条可靠保存链路）、M2（日记编辑闭环）与 M3（回看与检索）已完成：产品场景细化、SQLite 与编辑器选型 ADR、最小质量流程与版本基线、真实 SQLite 持久化与自动保存、M2-01 的结构化正文编辑器、M2-02 的图片附件、M2-03 的标签与回收站、M2-04 的 A02–A09 回归与切页守卫、M3-01 的时间线与月历、M3-02 的关键词、标签与日期范围检索。M4–M6 待实施；文档中的验收目标不代表已经通过，实际验收证据记录在 `development/iterations/` 下的迭代记录中。
