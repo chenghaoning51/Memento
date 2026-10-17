@@ -24,7 +24,11 @@ const statusText: Record<SaveStatus, string> = {
   failed: "保存失败",
 };
 
-export function TodayPage() {
+type TodayPageProps = {
+  registerLeaveGuard: (guard: (() => Promise<boolean>) | null) => void;
+};
+
+export function TodayPage({ registerLeaveGuard }: TodayPageProps) {
   const today = useMemo(() => new Date(), []);
   const entryDate = toLocalDateString(today);
   const dateLabel = formatLocalDate(today);
@@ -140,6 +144,16 @@ export function TodayPage() {
       setError(String(cause));
     }
   }, [draft, flush, openEntry, refreshList]);
+
+  // 侧栏切页同样先落盘：失败就留在今天页，输入不丢（A04）。
+  useEffect(() => {
+    registerLeaveGuard(async () => {
+      if (await flush()) return true;
+      setError("还有内容没有保存成功，已停留在当前日记。请先重试保存。");
+      return false;
+    });
+    return () => registerLeaveGuard(null);
+  }, [flush, registerLeaveGuard]);
 
   const onContentChange = (content: JSONContent, contentText: string, coverAttachmentId: string | null) => {
     setDraft((current) => (current ? { ...current, content, contentText, coverAttachmentId } : current));

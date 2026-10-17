@@ -56,3 +56,10 @@
 - 新增六个 Tauri 命令：`list_deleted_entries`、`delete_entry`、`restore_entry`、`list_entry_tags`、`add_entry_tag`、`remove_entry_tag`。
 - 修正切换日记后正文上方累积空标签栏的问题：标签栏与编辑器是同一 Fragment 的兄弟节点且用了相同 key，React 复用了旧 DOM；改为各自带前缀的 key。
 - 新增两个 Rust 用例覆盖标签去重与软删除恢复，`cargo test` 现为 7 个用例。
+
+## 2026-10-17 M2-04 回归与切页守卫
+
+- 在真实窗口回归 A02–A09：用 SQLite 触发器注入写入失败验证 A04，用强制结束进程验证 A02 与 A05，覆盖长文粘贴、撤销重做、中文组合输入、多图导入、标签规范化与回收站恢复。
+- 修复保存失败时点侧栏切页会静默丢弃输入的问题：应用壳在切页前调用当前页面注册的守卫，守卫 flush 失败时不切换页面，并在当前页提示“还有内容没有保存成功，已停留在当前日记。请先重试保存。”。
+- 关闭窗口的行为不变：关闭前仍执行 flush，flush 失败时保留窗口与输入。
+- M2 退出条件满足，验收证据见[迭代 004](development/iterations/iteration-004.md)。
