@@ -5,10 +5,18 @@ import {
   MailOpen,
   Settings2,
   SunMedium,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 
-export type AppPage = "today" | "timeline" | "calendar" | "letters" | "collection" | "settings";
+export type AppPage =
+  | "today"
+  | "timeline"
+  | "calendar"
+  | "letters"
+  | "collection"
+  | "trash"
+  | "settings";
 
 export type NavigationItem = {
   id: AppPage;
@@ -22,6 +30,7 @@ export const primaryNavigation: NavigationItem[] = [
   { id: "calendar", label: "时间地图", icon: CalendarDays },
   { id: "letters", label: "未来信箱", icon: MailOpen },
   { id: "collection", label: "收藏册", icon: Bookmark },
+  { id: "trash", label: "回收站", icon: Trash2 },
 ];
 
 export const utilityNavigation: NavigationItem[] = [
@@ -34,5 +43,6 @@ export const pageTitles: Record<AppPage, string> = {
   calendar: "时间地图",
   letters: "未来信箱",
   collection: "收藏册",
+  trash: "回收站",
   settings: "设置",
 };

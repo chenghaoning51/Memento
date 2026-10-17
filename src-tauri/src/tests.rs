@@ -9,6 +9,7 @@ use crate::db::migrations;
 use crate::entries::{repository, EntryDraft};
 use crate::error::AppError;
 use crate::library::Library;
+use crate::tags::{self, repository as tag_repository};
 
 const EMPTY_CONTENT_JSON: &str =
     r#"{"version":2,"type":"doc","content":[{"type":"paragraph"}]}"#;
@@ -172,6 +173,132 @@ fn rejects_unsupported_image_format() {
         attachments::inspect_image(&bmp),
         Err(AppError::UnsupportedImage(_))
     ));
+}
+
+
+/// A08：标签按规范化名去重，重复输入同一篇日记只留一个关联。
+#[test]
+fn tag_is_shared_across_entries_and_not_duplicated() {
+    let root = temp_library_root("tags");
+    let library = Library::open(root.clone()).unwrap();
+    let first = Uuid::new_v4().to_string();
+    let second = Uuid::new_v4().to_string();
+
+    library
+        .with_connection(|connection| {
+            repository::create(connection, &first, "2026-10-17", EMPTY_CONTENT_JSON, CREATED_AT)?;
+            repository::create(connection, &second, "2026-10-17", EMPTY_CONTENT_JSON, CREATED_AT)
+        })
+        .unwrap();
+
+    let tags = library
+        .with_connection(|connection| {
+            tag_repository::add(connection, &first, &tags::clean(" 旅行   记录 "))?;
+            tag_repository::add(connection, &first, "Travel")?;
+            // 大小写不同、首尾带空白，规范化后与上一条相同，不应新增关联。
+            tag_repository::add(connection, &first, "  travel  ")?;
+            tag_repository::add(connection, &second, "travel")?;
+            tag_repository::list_for_entry(connection, &first)
+        })
+        .unwrap();
+
+    assert_eq!(
+        tags.iter().map(|tag| tag.name.as_str()).collect::<Vec<_>>(),
+        vec!["旅行 记录", "Travel"]
+    );
+
+    let tag_count: i64 = library
+        .with_connection(|connection| {
+            connection
+                .query_row("SELECT count(*) FROM tags", [], |row| row.get(0))
+                .map_err(AppError::from)
+        })
+        .unwrap();
+    assert_eq!(tag_count, 2);
+
+    let removed = library
+        .with_connection(|connection| {
+            tag_repository::remove(connection, &first, &tags[1].id)?;
+            tag_repository::list_for_entry(connection, &first)
+        })
+        .unwrap();
+    assert_eq!(removed.len(), 1);
+
+    std::fs::remove_dir_all(&root).ok();
+}
+
+/// A09：软删除只写 deleted_at_utc，正文、附件和标签关系都不动；恢复后原样回来。
+#[test]
+fn deleted_entry_keeps_body_attachments_and_tags() {
+    let root = temp_library_root("trash");
+    let library = Library::open(root.clone()).unwrap();
+    let entry_id = Uuid::new_v4().to_string();
+    let attachment_id = Uuid::new_v4().to_string();
+
+    library
+        .with_connection(|connection| {
+            repository::create(connection, &entry_id, "2026-10-17", EMPTY_CONTENT_JSON, CREATED_AT)?;
+            tag_repository::add(connection, &entry_id, "工作")?;
+
+            let relative = attachments::original_path(&entry_id, &attachment_id, "png");
+            attachments::write_file(library.root(), &relative, &sample_png(2, 2))?;
+            attachment_repository::insert(
+                connection,
+                &Attachment {
+                    id: attachment_id.clone(),
+                    entry_id: entry_id.clone(),
+                    relative_path: relative,
+                    mime_type: "image/png".to_string(),
+                    file_size: 1,
+                    sha256: String::new(),
+                    width: 2,
+                    height: 2,
+                    created_at_utc: CREATED_AT.to_string(),
+                },
+            )
+        })
+        .unwrap();
+
+    assert!(library
+        .with_connection(|connection| repository::set_deleted_at(
+            connection,
+            &entry_id,
+            Some("2026-10-17T09:00:00Z")
+        ))
+        .unwrap());
+
+    let listed = library
+        .with_connection(|connection| repository::list_by_date(connection, "2026-10-17"))
+        .unwrap();
+    assert!(listed.is_empty());
+
+    let deleted = library.with_connection(repository::list_deleted).unwrap();
+    assert_eq!(deleted.len(), 1);
+    assert_eq!(deleted[0].id, entry_id);
+    assert_eq!(deleted[0].deleted_at_utc, "2026-10-17T09:00:00Z");
+
+    assert!(library
+        .with_connection(|connection| repository::set_deleted_at(connection, &entry_id, None))
+        .unwrap());
+
+    let restored = library
+        .with_connection(|connection| repository::require(connection, &entry_id))
+        .unwrap();
+    assert_eq!(restored.deleted_at_utc, None);
+
+    let entry_tags = library
+        .with_connection(|connection| tag_repository::list_for_entry(connection, &entry_id))
+        .unwrap();
+    assert_eq!(entry_tags.len(), 1);
+
+    let attachment = library
+        .with_connection(|connection| {
+            attachment_repository::find_for_read(connection, &attachment_id)
+        })
+        .unwrap();
+    assert!(attachment.is_some());
+
+    std::fs::remove_dir_all(&root).ok();
 }
 
 fn sample_png(width: u32, height: u32) -> Vec<u8> {

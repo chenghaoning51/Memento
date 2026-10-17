@@ -29,6 +29,18 @@ pub struct EntrySummary {
     pub updated_at_utc: String,
 }
 
+/// 回收站条目：正常列表之外再带上删除时间。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeletedEntry {
+    pub id: String,
+    pub entry_date: String,
+    pub excerpt: String,
+    pub cover_attachment_id: Option<String>,
+    pub created_at_utc: String,
+    pub deleted_at_utc: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EntryDraft {

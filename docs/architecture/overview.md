@@ -5,13 +5,15 @@
 M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一条可靠保存链路，M2 起正文换成结构化编辑器：
 
 - Rust 侧在应用数据目录下创建 `Memento Library/`，用 rusqlite（bundled）打开 `memento.db`，启用 WAL 与外键，并通过 `PRAGMA user_version` 顺序执行迁移（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。
-- 七个 Tauri 命令对前端可用：`library_info`、`list_entries`、`get_entry`、`create_entry`、`save_entry`、`import_attachment`、`delete_attachment`；SQL 与业务规则只存在于 Rust 侧。
+- 十三个 Tauri 命令对前端可用：`library_info`、`list_entries`、`get_entry`、`create_entry`、`save_entry`、`import_attachment`、`delete_attachment`、`list_deleted_entries`、`delete_entry`、`restore_entry`、`list_entry_tags`、`add_entry_tag`、`remove_entry_tag`；SQL 与业务规则只存在于 Rust 侧。
 - “今天”页是真实数据流：按本地日历日期列出当天日记，可新建与切换，停止输入 800 ms 自动保存、连续输入最多 5 秒强制保存（见 [ADR-0003](../decisions/0003-editor-and-body-format.md)）。
 - 正文用 Tiptap 编辑，支持标题、引用、分隔线、链接、加粗、斜体和撤销重做；结构化 JSON 存 `content_json`，纯文本副本存 `content_text` 供摘要与后续搜索使用。正文格式当前为 version 2，旧的 version 1 正文在读取时自动升级（见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)）。
 - 图片以附件文件保存：导入时把原图复制到 `attachments/<entry_id>/<attachment_id>.<ext>` 并生成缩略图，正文 image 节点只记附件 ID；编辑器通过 `attachment` 自定义协议按 ID 读图，前端不接触磁盘路径（见 [ADR-0005](../decisions/0005-attachment-files.md)）。
+- 标签独立存表：编辑器上方的标签栏在确认和移除时立即写库，规范化后按 `normalized_name` 复用同一行；正文里不存标签字符串（见 [ADR-0006](../decisions/0006-tags-and-soft-delete.md)）。
+- 删除日记是软删除：页脚的“移到回收站”只写 `deleted_at_utc`，日记从“今天”列表消失；“回收站”页按删除时间从新到旧列出被删日记并可恢复，正文、附件与标签关系都不动。
 - “设置”页显示数据目录、数据库文件路径与模式版本。
 
-尚未接入：标签、回收站、搜索、未来信件、导出备份、前端测试与 CI。导航中的对应入口仍是占位页。
+尚未接入：搜索、时间线、月历、未来信件、导出备份、前端测试与 CI。导航中的对应入口仍是占位页。
 
 ## 目标分层
 
@@ -41,7 +43,7 @@ UI 不直接读写 SQLite 和文件系统。页面通过应用服务发起动作
 Rust 层负责本地数据边界：
 
 - 初始化和迁移 SQLite。
-- 原子写入日记、标签和附件元数据。
+- 原子写入日记、标签和附件元数据，并维护软删除状态。
 - 保存附件、生成缩略图和清理孤立文件。
 - 导出、备份、校验和恢复。
 - 只暴露经过类型约束的 Tauri 命令。
@@ -60,7 +62,7 @@ Memento Library/
 
 数据库保存结构化内容和附件元数据；原始图片不以 Base64 长期存储在数据库中。
 
-M1 只使用 `memento.db`；M2-02 起首次导入图片时创建 `attachments/` 与 `thumbnails/`。其余目录在对应阶段创建，不预建空目录。
+M1 只使用 `memento.db`；M2-02 起首次导入图片时创建 `attachments/` 与 `thumbnails/`。标签与软删除状态都存在数据库里，不新增目录。其余目录在对应阶段创建，不预建空目录。
 
 ## 时间处理
 

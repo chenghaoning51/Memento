@@ -270,12 +270,20 @@ button:focus-visible {
 
 .sheet-footer {
   min-height: 26px;
+  gap: 10px;
 }
 
 .sheet-footer-line {
   width: 44px;
   height: 1px;
+  margin-left: auto;
   background: #cfcdc3;
+}
+
+.sheet-trash {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .section-empty {
@@ -533,6 +541,112 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.tag-bar {
+  margin-bottom: 14px;
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid #dbe0e9;
+  border-radius: 3px;
+  color: #5b6478;
+  background: #f3f5fa;
+  font-size: 11px;
+}
+
+.tag-remove {
+  display: grid;
+  padding: 2px;
+  border: 0;
+  place-items: center;
+  color: #9099ac;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tag-remove:hover {
+  color: #5b6478;
+}
+
+.tag-input {
+  min-width: 84px;
+  flex: 1;
+  padding: 3px 0;
+  border: 0;
+  border-bottom: 1px dashed #dcd8cd;
+  color: #4a4c48;
+  background: transparent;
+  font-size: 11px;
+}
+
+.tag-input:focus {
+  border-bottom-color: #b9c2dc;
+  outline: none;
+}
+
+.trash-hint {
+  margin: 26px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.trash-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #e3dfd5;
+}
+
+.trash-item {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid #eae7de;
+}
+
+.trash-when {
+  display: grid;
+  gap: 3px;
+}
+
+.trash-date {
+  color: #4a4c48;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 13px;
+}
+
+.trash-time {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.trash-excerpt {
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trash-restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .editor-error {
   margin: 9px 0 0;
   color: #a4442f;
@@ -728,6 +842,14 @@ button:focus-visible {
 
   .entry-list {
     margin-top: 20px;
+  }
+
+  .trash-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .trash-excerpt {
+    grid-column: 1 / -1;
   }
 
   .date-stamp {

@@ -41,6 +41,20 @@ export type Attachment = {
   createdAtUtc: string;
 };
 
+export type Tag = {
+  id: string;
+  name: string;
+};
+
+export type DeletedEntry = {
+  id: string;
+  entryDate: string;
+  excerpt: string;
+  coverAttachmentId: string | null;
+  createdAtUtc: string;
+  deletedAtUtc: string;
+};
+
 export type SaveStatus = "saved" | "dirty" | "saving" | "failed";
 
 export type LibraryInfo = {

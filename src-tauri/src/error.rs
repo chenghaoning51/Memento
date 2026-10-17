@@ -7,6 +7,7 @@ pub enum AppError {
     UnsupportedSchema(i64),
     MissingEntry(String),
     UnsupportedImage(String),
+    TagTooLong,
 }
 
 impl std::fmt::Display for AppError {
@@ -20,6 +21,7 @@ impl std::fmt::Display for AppError {
             ),
             AppError::MissingEntry(id) => write!(f, "日记 {id} 已不存在，无法保存"),
             AppError::UnsupportedImage(message) => write!(f, "{message}"),
+            AppError::TagTooLong => write!(f, "标签最多 32 个字符。"),
         }
     }
 }

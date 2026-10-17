@@ -1,6 +1,6 @@
 use rusqlite::{Connection, OptionalExtension};
 
-use super::{Entry, EntryDraft, EntrySummary};
+use super::{DeletedEntry, Entry, EntryDraft, EntrySummary};
 use crate::error::{AppError, AppResult};
 
 const ENTRY_COLUMNS: &str = "id, entry_date, title, content_json, content_text, excerpt, cover_attachment_id,
@@ -83,6 +83,45 @@ pub fn list_by_date(connection: &Connection, entry_date: &str) -> AppResult<Vec<
         entries.push(row?);
     }
     Ok(entries)
+}
+
+/// 回收站：只列软删除的日记，最近删除的排在前面。
+pub fn list_deleted(connection: &Connection) -> AppResult<Vec<DeletedEntry>> {
+    let mut statement = connection.prepare(
+        "SELECT id, entry_date, excerpt, cover_attachment_id, created_at_utc, deleted_at_utc
+         FROM entries
+         WHERE deleted_at_utc IS NOT NULL
+         ORDER BY deleted_at_utc DESC, id DESC",
+    )?;
+    let rows = statement.query_map([], |row| {
+        Ok(DeletedEntry {
+            id: row.get(0)?,
+            entry_date: row.get(1)?,
+            excerpt: row.get(2)?,
+            cover_attachment_id: row.get(3)?,
+            created_at_utc: row.get(4)?,
+            deleted_at_utc: row.get(5)?,
+        })
+    })?;
+
+    let mut entries = Vec::new();
+    for row in rows {
+        entries.push(row?);
+    }
+    Ok(entries)
+}
+
+/// 软删除与恢复只动 deleted_at_utc，正文、附件和标签关系保持不变。
+pub fn set_deleted_at(
+    connection: &Connection,
+    id: &str,
+    deleted_at_utc: Option<&str>,
+) -> AppResult<bool> {
+    let changed = connection.execute(
+        "UPDATE entries SET deleted_at_utc = ?2 WHERE id = ?1",
+        rusqlite::params![id, deleted_at_utc],
+    )?;
+    Ok(changed == 1)
 }
 
 pub fn save(

@@ -1,6 +1,6 @@
 import { pageTitles, type AppPage } from "../../app/navigation";
 
-const sectionCopy: Record<Exclude<AppPage, "today">, string> = {
+const sectionCopy: Record<Exclude<AppPage, "today" | "trash">, string> = {
   timeline: "沿着时间，慢慢翻阅留下的片段。",
   calendar: "从某一天重新走进那段生活。",
   letters: "写给未来的信，会在约定的日子打开。",
@@ -8,7 +8,7 @@ const sectionCopy: Record<Exclude<AppPage, "today">, string> = {
   settings: "管理你的私人空间。",
 };
 
-export function SectionPage({ page }: { page: Exclude<AppPage, "today"> }) {
+export function SectionPage({ page }: { page: Exclude<AppPage, "today" | "trash"> }) {
   return (
     <section className="section-page" aria-labelledby="page-title">
       <header className="page-header">

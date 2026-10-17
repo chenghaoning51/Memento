@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Feather, Plus } from "lucide-react";
 import { attachmentSource } from "../../lib/attachmentSource";
-import { createEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
+import { createEntry, deleteEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
 import { readContent, writeContent } from "../../lib/entryContent";
 import { formatClockTime, formatLocalDate, toLocalDateString } from "../../lib/localDate";
 import type { JSONContent } from "@tiptap/core";
 import type { EntrySummary, SaveStatus } from "../../types/entry";
 import { EntryEditor } from "./EntryEditor";
+import { TagBar } from "./TagBar";
 import { useAutosave } from "./useAutosave";
 
 type Draft = {
@@ -63,7 +64,9 @@ export function TodayPage() {
   });
 
   const refreshList = useCallback(async () => {
-    setEntries(await listEntries(entryDate));
+    const summaries = await listEntries(entryDate);
+    setEntries(summaries);
+    return summaries;
   }, [entryDate]);
 
   const openEntry = useCallback(
@@ -118,6 +121,25 @@ export function TodayPage() {
       setError(String(cause));
     }
   }, [entryDate, flush, refreshList]);
+
+  // 软删除：先落盘再移走，附件与标签关系都不动（恢复时原样回来）。
+  const moveToTrash = useCallback(async () => {
+    if (!draft || !(await flush())) {
+      setError("还有内容没有保存成功，已停留在当前日记。请先重试保存。");
+      return;
+    }
+    try {
+      await deleteEntry(draft.id);
+      setDraft(null);
+      const remaining = await refreshList();
+      setError(null);
+      if (remaining.length > 0) {
+        await openEntry(remaining[remaining.length - 1].id);
+      }
+    } catch (cause) {
+      setError(String(cause));
+    }
+  }, [draft, flush, openEntry, refreshList]);
 
   const onContentChange = (content: JSONContent, contentText: string, coverAttachmentId: string | null) => {
     setDraft((current) => (current ? { ...current, content, contentText, coverAttachmentId } : current));
@@ -176,7 +198,10 @@ export function TodayPage() {
           </div>
 
           {draft ? (
-            <EntryEditor key={draft.id} entryId={draft.id} content={draft.content} onChange={onContentChange} />
+            <>
+              <TagBar key={`tags-${draft.id}`} entryId={draft.id} />
+              <EntryEditor key={`editor-${draft.id}`} entryId={draft.id} content={draft.content} onChange={onContentChange} />
+            </>
           ) : (
             <div className="empty-page">
               <div className="empty-mark" aria-hidden="true">
@@ -197,6 +222,11 @@ export function TodayPage() {
             {status === "failed" && (
               <button className="link-button" type="button" onClick={retry}>
                 重试保存
+              </button>
+            )}
+            {draft && (
+              <button className="link-button sheet-trash" type="button" onClick={() => void moveToTrash()}>
+                移到回收站
               </button>
             )}
             <span className="sheet-footer-line" aria-hidden="true" />

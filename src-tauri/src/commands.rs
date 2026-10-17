@@ -5,9 +5,10 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::attachments::{self, repository as attachment_repository, Attachment};
-use crate::entries::{repository, Entry, EntryDraft, EntrySummary};
+use crate::entries::{repository, DeletedEntry, Entry, EntryDraft, EntrySummary};
 use crate::error::{AppError, AppResult};
 use crate::library::{Library, LibraryInfo};
+use crate::tags::{self, repository as tag_repository, Tag};
 
 /// 新日记的空正文：一个空段落。版本 2 对应 ADR-0004 的 Tiptap 文档格式。
 const EMPTY_CONTENT_JSON: &str =
@@ -54,6 +55,73 @@ pub fn save_entry(library: State<'_, Library>, draft: EntryDraft) -> AppResult<E
             return Err(AppError::MissingEntry(draft.id.clone()));
         }
         repository::require(connection, &draft.id)
+    })
+}
+
+#[tauri::command]
+pub fn list_deleted_entries(library: State<'_, Library>) -> AppResult<Vec<DeletedEntry>> {
+    library.with_connection(repository::list_deleted)
+}
+
+/// 软删除：只写 deleted_at_utc，正文、附件和标签关系都不动。
+#[tauri::command]
+pub fn delete_entry(library: State<'_, Library>, id: String) -> AppResult<()> {
+    let now = now_utc();
+    library.with_connection(|connection| {
+        if !repository::set_deleted_at(connection, &id, Some(&now))? {
+            return Err(AppError::MissingEntry(id.clone()));
+        }
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn restore_entry(library: State<'_, Library>, id: String) -> AppResult<Entry> {
+    library.with_connection(|connection| {
+        if !repository::set_deleted_at(connection, &id, None)? {
+            return Err(AppError::MissingEntry(id.clone()));
+        }
+        repository::require(connection, &id)
+    })
+}
+
+#[tauri::command]
+pub fn list_entry_tags(library: State<'_, Library>, entry_id: String) -> AppResult<Vec<Tag>> {
+    library.with_connection(|connection| tag_repository::list_for_entry(connection, &entry_id))
+}
+
+/// 加标签时先规范化再写库：空白与大小写不影响去重，同一篇日记不会重复关联。
+#[tauri::command]
+pub fn add_entry_tag(
+    library: State<'_, Library>,
+    entry_id: String,
+    name: String,
+) -> AppResult<Vec<Tag>> {
+    let clean = tags::clean(&name);
+    if clean.chars().count() > tags::MAX_TAG_CHARS {
+        return Err(AppError::TagTooLong);
+    }
+    if clean.is_empty() {
+        return library.with_connection(|connection| {
+            tag_repository::list_for_entry(connection, &entry_id)
+        });
+    }
+
+    library.with_connection(|connection| {
+        tag_repository::add(connection, &entry_id, &clean)?;
+        tag_repository::list_for_entry(connection, &entry_id)
+    })
+}
+
+#[tauri::command]
+pub fn remove_entry_tag(
+    library: State<'_, Library>,
+    entry_id: String,
+    tag_id: String,
+) -> AppResult<Vec<Tag>> {
+    library.with_connection(|connection| {
+        tag_repository::remove(connection, &entry_id, &tag_id)?;
+        tag_repository::list_for_entry(connection, &entry_id)
     })
 }
 

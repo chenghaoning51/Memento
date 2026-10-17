@@ -4,6 +4,7 @@ mod db;
 mod entries;
 mod error;
 mod library;
+mod tags;
 
 #[cfg(test)]
 mod tests;
@@ -34,6 +35,12 @@ pub fn run() {
             commands::save_entry,
             commands::import_attachment,
             commands::delete_attachment,
+            commands::list_deleted_entries,
+            commands::delete_entry,
+            commands::restore_entry,
+            commands::list_entry_tags,
+            commands::add_entry_tag,
+            commands::remove_entry_tag,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Memento");

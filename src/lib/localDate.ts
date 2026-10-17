@@ -15,6 +15,16 @@ export function formatLocalDate(date: Date): string {
   }).format(date);
 }
 
+/** 把 YYYY-MM-DD 显示成中文日期；不经过 Date 构造，避免时区把日期挪一天。 */
+export function formatCalendarDate(entryDate: string): string {
+  const [year, month, day] = entryDate.split("-").map(Number);
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(year, month - 1, day));
+}
+
 export function formatClockTime(isoUtc: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
     hour: "2-digit",

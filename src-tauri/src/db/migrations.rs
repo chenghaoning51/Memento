@@ -33,6 +33,18 @@ const MIGRATIONS: &[&str] = &[
      );
      CREATE INDEX attachments_by_entry ON attachments (entry_id);
      CREATE INDEX attachments_by_sha256 ON attachments (sha256);",
+    // v3：标签。tags 存显示名与用于去重的规范化名，entry_tags 是多对多关系。
+    "CREATE TABLE tags (
+        id TEXT PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        normalized_name TEXT NOT NULL UNIQUE
+     );
+     CREATE TABLE entry_tags (
+        entry_id TEXT NOT NULL REFERENCES entries (id),
+        tag_id TEXT NOT NULL REFERENCES tags (id),
+        PRIMARY KEY (entry_id, tag_id)
+     );
+     CREATE INDEX entry_tags_by_tag ON entry_tags (tag_id);",
 ];
 
 pub fn target_version() -> i64 {
