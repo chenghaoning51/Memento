@@ -93,3 +93,12 @@
 - 迁移 v5 新增 `letters` 表与 `letters_by_unlock` 索引；新增七个 Tauri 命令：`list_letters`、`get_letter`、`create_letter`、`update_letter`、`delete_letter`、`open_letter`、`save_letter_reply`，命令总数变为二十四个。
 - 修复四个缺陷：换时区后阅读态顶栏与列表日期对不上；换时区编辑会让开启时刻漂移；“还有 N 天”把十几秒说成 1 天；到期但尚未打开的信仍能被编辑。
 - 新增两个 Rust 用例覆盖锁定到打开的状态推进、回应独立保存与跨午夜/夏令时的时刻判定，`cargo test` 现为 11 个用例；A13、A14 桌面验收记录见[迭代 007](development/iterations/iteration-007.md)。
+
+## 2026-10-18 M5-01 Markdown 导出
+
+- 设置页新增「导出」区块：选择目录后把全部未删除的日记写成 Markdown，图片复制到同一目录的 images/ 并用相对路径引用，导出后不依赖 Memento 也能打开。
+- 正文按节点降级：小标题→`#`、引用→`>`、分隔线→`---`、加粗→`**`、斜体→`*`、删除线→`~~`、行内代码→反引号、链接→`[文本](url)`、图片→`![](images/文件名)`；不认识的节点递归取其文字。
+- 文件名是「日期-标题」，标题为空时用摘要前 16 个字；Windows 不允许的字符换成空格，超长截断到 60 字；同名文件追加「 (2)」「 (3)」，不覆盖已有文件。
+- 导出成功后显示导出了几篇日记、几张图片和写到哪个目录；用户在系统对话框里取消时不报错；目标不可写时返回可读错误，不留半成品。
+- 新增依赖 `tauri-plugin-dialog` 与 `@tauri-apps/plugin-dialog`，capability 增加 `dialog:default`；新增 `export` 模块与 `export_entries` 命令，命令总数变为二十五个。取舍见 [ADR-0009](decisions/0009-markdown-export.md)。
+- 新增 Rust 用例覆盖 Markdown 降级与重名不覆盖，`cargo test` 现为 12 个用例；A16 桌面验收记录见[迭代 008](development/iterations/iteration-008.md)。

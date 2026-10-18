@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use image::{EncodableLayout, ImageEncoder};
@@ -9,6 +10,7 @@ use crate::db::migrations;
 use crate::entries::{repository, EntryDraft, SearchQuery};
 use crate::letters::{self, repository as letter_repository, LetterDraft};
 use crate::error::AppError;
+use crate::export::{self, ExportEntry};
 use crate::library::Library;
 use crate::tags::{self, repository as tag_repository};
 
@@ -555,6 +557,56 @@ fn sample_png(width: u32, height: u32) -> Vec<u8> {
         )
         .unwrap();
     buffer
+}
+
+/// A16：导出把正文降级成 Markdown，图片用相对路径，重名不覆盖。
+#[test]
+fn export_writes_markdown_and_copies_images() {
+    let root = temp_library_root("export");
+    let target = root.join("out");
+    std::fs::create_dir_all(root.join("attachments/entry-1")).unwrap();
+    std::fs::write(root.join("attachments/entry-1/pic.png"), sample_png(20, 10)).unwrap();
+
+    let content = r#"{"version":2,"type":"doc","content":[
+        {"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"下午"}]},
+        {"type":"paragraph","content":[
+            {"type":"text","text":"窗外的"},
+            {"type":"text","marks":[{"type":"bold"}],"text":"梧桐叶"},
+            {"type":"text","text":"被打湿了。"}
+        ]},
+        {"type":"blockquote","content":[{"type":"paragraph","content":[{"type":"text","text":"雨还在下。"}]}]},
+        {"type":"horizontalRule"},
+        {"type":"paragraph","content":[{"type":"image","attrs":{"alt":"窗外的树","attachmentId":"att-1"}}]}
+    ]}"#;
+
+    let entries = vec![ExportEntry {
+        entry_date: "2026-10-17".to_string(),
+        title: "雨天/散步".to_string(),
+        content_json: content.to_string(),
+        excerpt: "窗外的梧桐叶被打湿了。".to_string(),
+    }];
+    let mut attachments = HashMap::new();
+    attachments.insert("att-1".to_string(), "attachments/entry-1/pic.png".to_string());
+
+    let first = export::write_entries(&target, &root, &entries, &attachments).unwrap();
+    assert_eq!(first.entry_count, 1);
+    assert_eq!(first.image_count, 1);
+
+    let markdown = std::fs::read_to_string(target.join("2026-10-17-雨天 散步.md")).unwrap();
+    assert!(markdown.starts_with("# 雨天/散步\n\n"));
+    assert!(markdown.contains("## 下午"));
+    assert!(markdown.contains("窗外的**梧桐叶**被打湿了。"));
+    assert!(markdown.contains("> 雨还在下。"));
+    assert!(markdown.contains("---"));
+    assert!(markdown.contains("![窗外的树](images/pic.png)"));
+    assert!(target.join("images/pic.png").exists());
+
+    // 同一个目录再导出一次：文件名追加序号，不覆盖已有文件。
+    let second = export::write_entries(&target, &root, &entries, &attachments).unwrap();
+    assert_eq!(second.image_count, 0);
+    assert!(target.join("2026-10-17-雨天 散步 (2).md").exists());
+
+    std::fs::remove_dir_all(&root).ok();
 }
 
 /// A13、A14：未到期不可读，到期后能读原信并单独保存回应，打开时间不被覆盖。

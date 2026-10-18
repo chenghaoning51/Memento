@@ -31,3 +31,4 @@
 - [0006：标签存独立表，日记只做软删除](0006-tags-and-soft-delete.md)
 - [0007：用折叠小写的搜索列做子串匹配](0007-search-strategy.md)
 - [0008：信件的开启时刻存 UTC，状态在读取时推进](0008-letters-unlock-time.md)
+- [0009：导出用 Markdown 文件与相对路径图片](0009-markdown-export.md)

@@ -2,10 +2,10 @@
 
 ## 当前状态
 
-M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一条可靠保存链路，M2 起正文换成结构化编辑器，M3 补上时间回看与检索，M4-01 加入未来信箱：
+M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一条可靠保存链路，M2 起正文换成结构化编辑器，M3 补上时间回看与检索，M4-01 加入未来信箱，M5-01 加入 Markdown 导出：
 
 - Rust 侧在应用数据目录下创建 `Memento Library/`，用 rusqlite（bundled）打开 `memento.db`，启用 WAL 与外键，并通过 `PRAGMA user_version` 顺序执行迁移（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。
-- 二十四个 Tauri 命令对前端可用：`library_info`、`list_entries`、`list_entry_dates`、`list_timeline`、`search_entries`、`list_tags`、`get_entry`、`create_entry`、`save_entry`、`import_attachment`、`delete_attachment`、`list_deleted_entries`、`delete_entry`、`restore_entry`、`list_entry_tags`、`add_entry_tag`、`remove_entry_tag`、`list_letters`、`get_letter`、`create_letter`、`update_letter`、`delete_letter`、`open_letter`、`save_letter_reply`；SQL 与业务规则只存在于 Rust 侧。
+- 二十五个 Tauri 命令对前端可用：`library_info`、`list_entries`、`list_entry_dates`、`list_timeline`、`search_entries`、`list_tags`、`get_entry`、`create_entry`、`save_entry`、`import_attachment`、`delete_attachment`、`list_deleted_entries`、`delete_entry`、`restore_entry`、`list_entry_tags`、`add_entry_tag`、`remove_entry_tag`、`list_letters`、`get_letter`、`create_letter`、`update_letter`、`delete_letter`、`open_letter`、`save_letter_reply`、`export_entries`；SQL 与业务规则只存在于 Rust 侧。
 - 日记页是真实数据流：按传入的本地日历日期列出当天日记，可新建与切换，停止输入 800 ms 自动保存、连续输入最多 5 秒强制保存（见 [ADR-0003](../decisions/0003-editor-and-body-format.md)）。“今天”与“某一天”是同一个页面，只是日期不同。
 - 时间回看分两条只读查询：`list_timeline` 按日记日期倒序、同一天内后写的在前分页；`list_entry_dates` 按日期范围汇总每天篇数与当天首图，供月历一次取整屏（含相邻月格子）。排序、分组与统计都在 SQL 里完成，前端只做渲染。
 - 正文用 Tiptap 编辑，支持标题、引用、分隔线、链接、加粗、斜体和撤销重做；结构化 JSON 存 `content_json`，纯文本副本存 `content_text` 供摘要与后续搜索使用。正文格式当前为 version 2，旧的 version 1 正文在读取时自动升级（见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)）。
@@ -14,9 +14,10 @@ M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一�
 - 删除日记是软删除：页脚的“移到回收站”只写 `deleted_at_utc`，日记从“今天”列表消失；“回收站”页按删除时间从新到旧列出被删日记并可恢复，正文、附件与标签关系都不动。
 - 检索在一条 SQL 里组合三类条件：关键词对 `search_text`（标题与正文折叠空白、转小写后的副本）做转义后的子串匹配，标签走 `entry_tags` 交集，日期范围含两端；排序与分页与时间线一致。`search_text` 在每次保存时与 `excerpt` 同一次 UPDATE 重算，迁移 v4 时对旧库回填一次（见 [ADR-0007](../decisions/0007-search-strategy.md)）。
 - 未来信件把开启时刻存成 UTC（`unlock_at_utc`）并另存写信时区（`unlock_timezone`）；三态在每次读取时按当前 UTC 推进，不依赖后台定时器；到期后原信冻结，回应独立写 `reply_json` / `reply_text`（见 [ADR-0008](../decisions/0008-letters-unlock-time.md)）。
-- “设置”页显示数据目录、数据库文件路径与模式版本。
+- 导出把正文按节点映射成 Markdown、图片复制到目标目录的 images/ 并用相对路径引用；文件名是「日期-标题」，重名追加序号（见 [ADR-0009](../decisions/0009-markdown-export.md)）。导出由 Rust 完成，目录选择交给 dialog 插件，前端只传路径字符串。
+- “设置”页显示数据目录、数据库文件路径与模式版本，并提供 Markdown 导出入口。
 
-尚未接入：导出备份、前端测试与 CI。导航中的“收藏册”仍是占位页。
+尚未接入：备份与恢复、前端测试与 CI。导航中的“收藏册”仍是占位页。
 
 ## 目标分层
 
@@ -48,7 +49,7 @@ Rust 层负责本地数据边界：
 - 初始化和迁移 SQLite。
 - 原子写入日记、标签、附件元数据与信件，并维护软删除状态、搜索列和信件三态。
 - 保存附件、生成缩略图和清理孤立文件。
-- 导出、备份、校验和恢复。
+- 把正文降级成 Markdown 并复制图片（导出），以及备份、校验和恢复。
 - 只暴露经过类型约束的 Tauri 命令。
 
 ## 本地文件布局

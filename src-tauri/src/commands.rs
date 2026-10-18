@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use tauri::http::{header, Response, StatusCode};
 use tauri::{Manager, State, UriSchemeContext};
 use time::format_description::well_known::Rfc3339;
@@ -9,6 +11,7 @@ use crate::entries::{
     repository, DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary, SearchQuery,
 };
 use crate::error::{AppError, AppResult};
+use crate::export;
 use crate::letters::{self, repository as letter_repository, Letter, LetterDraft};
 use crate::library::{Library, LibraryInfo};
 use crate::tags::{self, repository as tag_repository, Tag};
@@ -348,6 +351,17 @@ pub fn attachment_response(
         Err(error) => error_response(error.to_string()),
     };
     response
+}
+
+/// 导出全部日记：写 Markdown 与图片到用户选定的目录。
+#[tauri::command]
+pub fn export_entries(library: State<'_, Library>, directory: String) -> AppResult<export::ExportSummary> {
+    let target = PathBuf::from(directory);
+    library.with_connection(|connection| {
+        let entries = export::repository::list_for_export(connection)?;
+        let attachments = export::repository::attachment_paths(connection)?;
+        export::write_entries(&target, library.root(), &entries, &attachments)
+    })
 }
 
 fn error_response(message: String) -> Response<Vec<u8>> {

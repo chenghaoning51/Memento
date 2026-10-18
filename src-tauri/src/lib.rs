@@ -3,6 +3,7 @@ mod commands;
 mod db;
 mod entries;
 mod error;
+mod export;
 mod letters;
 mod library;
 mod tags;
@@ -19,6 +20,7 @@ const LIBRARY_DIR: &str = "Memento Library";
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .register_uri_scheme_protocol("attachment", |context, request| {
             commands::attachment_response(context, request)
         })
@@ -53,6 +55,7 @@ pub fn run() {
             commands::delete_letter,
             commands::open_letter,
             commands::save_letter_reply,
+            commands::export_entries,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Memento");
