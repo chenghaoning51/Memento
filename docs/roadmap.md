@@ -29,7 +29,7 @@
 
 - 前端测试、CI 和 Windows 安装发布验收（Rust 侧已有 `cargo test`）。
 
-前端构建、Rust 检查和 13 个 Rust 测试已通过；M1 的 A01–A05、A15 桌面验收证据见[迭代 001](development/iterations/iteration-001.md)，M2 的 A06、A07 见[迭代 002](development/iterations/iteration-002.md)，A08、A09 见[迭代 003](development/iterations/iteration-003.md)，A02–A09 的回归见[迭代 004](development/iterations/iteration-004.md)，M3-01 的 A10 见[迭代 005](development/iterations/iteration-005.md)，M3-02 的 A11、A12 见[迭代 006](development/iterations/iteration-006.md)，M4-01 的 A13、A14 见[迭代 007](development/iterations/iteration-007.md)，M5-01 的 A16 见[迭代 008](development/iterations/iteration-008.md)，M5-02 至 M5-04 的 A17–A19 见[迭代 009](development/iterations/iteration-009.md)。导航中未接入的入口、版本号和占位页面均不代表功能完成。
+前端构建、Rust 检查与 13 个 Rust 测试通过；A01–A19 的桌面验收证据按阶段记录在 [development/iterations/](development/iterations/)（迭代 001 至 009），逐项状态见[验收清单](development/acceptance.md)。导航中未接入的入口、版本号和占位页面均不代表功能完成。
 
 ## P0：MVP 交付阶段
 
@@ -45,7 +45,7 @@
 | M5 导出与恢复 | Markdown 与图片、完整备份、校验与恢复 | 全新空间实际恢复后内容与关系完整，失败保留当前空间 | 已完成 |
 | M6 Windows 发布 | 全链路回归、故障与性能检查、安装升级和发布说明 | 全部 P0 验收通过，无发布阻断缺陷 | 待开始 |
 
-M2 已完成：“创建日记 → 自动保存 → 关闭重开 → 继续编辑 → 删除与恢复”已打通，支持格式编辑、图片、标签与回收站，A06–A09 与 M1 用例已在桌面回归通过。M3 已完成：时间线、月历与日期详情可用（A10 通过），关键词、标签与日期范围的组合检索也已打通（A11、A12 通过）。M4 已完成：写信、锁定列表、到期阅读与独立回应可用，A13、A14 通过，换时区与夏令时都不漂移。M5 已完成：全部未删除的日记可以导出成 Markdown 与图片（A16 通过），完整备份、预检与恢复也已打通（A17–A19 通过），失败时当前空间保持可打开。下一阶段是 M6 的发布加固与 Windows 验收。备份覆盖范围和数据一致性从 M0/M1 开始设计，完整实现和恢复验证在 M5 完成；不能因此把备份降为可选。
+M1 到 M5 的阶段退出条件都已满足：“创建 → 自动保存 → 关闭重开 → 继续编辑 → 删除与恢复”的日记闭环、时间回看与组合检索、未来信箱的锁定与回应、Markdown 导出与完整备份恢复都已通过桌面验收。下一阶段是 M6：全链路回归、故障与性能检查、Windows 安装与保留数据升级。
 
 容量假设为 1 名开发者、每周约 4 个有效开发日；含缓冲暂估约 11–16 周。尚未确定启动日期，M1 完成后重估，阶段通过验收后才更新状态。详细工作量和风险见开发计划。
 
