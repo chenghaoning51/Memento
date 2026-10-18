@@ -28,14 +28,14 @@ pnpm build
 # 检查 Rust 依赖和代码
 cargo check --manifest-path src-tauri/Cargo.toml
 
-# 运行 Rust 测试（迁移、持久化、模式版本）
+# 运行 Rust 测试（迁移、持久化、附件、检索、信件、导出、备份恢复）
 cargo test --manifest-path src-tauri/Cargo.toml
 
 # 检查已跟踪变更的空白问题
 git diff --check
 ```
 
-前端还没有测试命令，也没有 CI；前端行为依靠构建检查加真实桌面验收。Rust 侧有 `cargo test`，覆盖迁移、持久化与模式版本这类无法靠肉眼确认的行为。后续给前端引入测试工具时先写 ADR，再把实际可运行命令同步到本文和根 README；不要把规划中的命令当作已存在。
+前端还没有测试命令，也没有 CI；前端行为依靠构建检查加真实桌面验收。Rust 侧有 `cargo test`（13 个用例），覆盖迁移、持久化、附件读写、标签、检索、信件状态、导出降级与备份恢复这类无法靠肉眼确认的行为。后续给前端引入测试工具时先写 ADR，再把实际可运行命令同步到本文和根 README；不要把规划中的命令当作已存在。
 
 ## 第一次启动
 
@@ -46,15 +46,15 @@ git diff --check
 
 ## 数据目录约定
 
-首次启动时 Rust 侧在应用数据目录下创建 `Memento Library/`，其中 `memento.db` 是唯一的业务数据库。Windows 上应用数据目录为 `%APPDATA%\com.memento.app`，因此实际路径是：
+首次启动时 Rust 侧在应用数据目录下创建 `Memento Library/`，其中 `memento.db` 是唯一的业务数据库，`attachments/` 与 `thumbnails/` 存原图与缩略图，`backups/` 存恢复前自动留下的空间备份。Windows 上应用数据目录为 `%APPDATA%\com.memento.app`，因此实际路径是：
 
 ```text
 %APPDATA%\com.memento.app\Memento Library\memento.db
 ```
 
-应用内的“设置”页直接显示解析后的完整路径与数据库模式版本，不要靠记忆猜测。删除该目录等同于清空所有日记；调试时可以先退出应用再备份或删除，避免在运行中直接改库文件。
+应用内的“设置”页直接显示解析后的完整路径与数据库模式版本，不要靠记忆猜测。删除该目录等同于清空所有日记；调试时可以先退出应用再备份或删除，避免在运行中直接改库文件。导出与备份的目标目录由用户在系统对话框里选，默认不在数据目录内。
 
-用户可选的独立 Library 目录尚未实现，等 M5 备份与恢复阶段一并设计，不能默默把用户内容写入不透明的临时位置。
+用户可选的独立 Library 目录仍未实现：它需要单独的迁移与切换设计，不属于 M5 的完整空间备份恢复，留到后续评估。
 
 ## 开始开发前
 

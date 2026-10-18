@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use tauri::http::{header, Response, StatusCode};
 use tauri::{Manager, State, UriSchemeContext};
@@ -7,6 +7,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::attachments::{self, repository as attachment_repository, Attachment};
+use crate::backup;
 use crate::entries::{
     repository, DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary, SearchQuery,
 };
@@ -361,6 +362,40 @@ pub fn export_entries(library: State<'_, Library>, directory: String) -> AppResu
         let entries = export::repository::list_for_export(connection)?;
         let attachments = export::repository::attachment_paths(connection)?;
         export::write_entries(&target, library.root(), &entries, &attachments)
+    })
+}
+
+/// 备份整个空间到用户选定的父目录，自动创建带时间戳的子目录。
+#[tauri::command]
+pub fn create_backup(
+    library: State<'_, Library>,
+    parent: String,
+    app: tauri::AppHandle,
+) -> AppResult<backup::BackupSummary> {
+    let version = app.package_info().version.to_string();
+    let now = now_utc();
+    library.with_connection(|connection| {
+        backup::create(connection, library.root(), Path::new(&parent), &now, &version)
+    })
+}
+
+/// 恢复前预检：版本、清单与校验值。
+#[tauri::command]
+pub fn inspect_backup(directory: String) -> AppResult<backup::BackupInfo> {
+    backup::inspect(Path::new(&directory))
+}
+
+/// 用备份替换当前空间；替换前会先备份当前空间。
+#[tauri::command]
+pub fn restore_backup(
+    library: State<'_, Library>,
+    directory: String,
+    app: tauri::AppHandle,
+) -> AppResult<backup::RestoreSummary> {
+    let version = app.package_info().version.to_string();
+    let now = now_utc();
+    library.with_connection(|connection| {
+        backup::restore(connection, library.root(), Path::new(&directory), &now, &version)
     })
 }
 

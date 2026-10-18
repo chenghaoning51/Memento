@@ -102,3 +102,13 @@
 - 导出成功后显示导出了几篇日记、几张图片和写到哪个目录；用户在系统对话框里取消时不报错；目标不可写时返回可读错误，不留半成品。
 - 新增依赖 `tauri-plugin-dialog` 与 `@tauri-apps/plugin-dialog`，capability 增加 `dialog:default`；新增 `export` 模块与 `export_entries` 命令，命令总数变为二十五个。取舍见 [ADR-0009](decisions/0009-markdown-export.md)。
 - 新增 Rust 用例覆盖 Markdown 降级与重名不覆盖，`cargo test` 现为 12 个用例；A16 桌面验收记录见[迭代 008](development/iterations/iteration-008.md)。
+
+## 2026-10-18 M5-02 至 M5-04 完整备份与恢复
+
+- 设置页新增「备份与恢复」区块：备份到文件夹、从备份恢复。备份产物是一个目录，含 `memento.db` 一致性快照、`attachments/`、`thumbnails/` 与 `manifest.json`，目录名带秒级时间戳。
+- 数据库快照用 `VACUUM INTO` 生成，不暂停写入；备份期间继续编辑，快照停在备份那一刻，之后的输入不会混进来。
+- `manifest.json` 记录备份格式版本、应用版本、模式版本、创建时间与文件清单，每个文件带字节数与 SHA-256；它最后写入，没有 manifest 的目录就是没写完的备份。
+- 恢复前先预检：manifest 是否存在、格式版本是否受支持、文件是否齐全、校验值是否一致；预检通过后展示这份备份的篇数、信数与创建时间，用户确认才继续。
+- 恢复会自动把当前空间备份到数据目录的 `backups/`，再在一条事务里换掉 `entries`、`attachments`、`tags`、`entry_tags`、`letters` 五张表；事务失败就回滚，当前空间一行都不变，附件与缩略图在事务成功后才替换。
+- 新增 `AppError::InvalidBackup` 与 `backup` 模块；新增三个 Tauri 命令 `create_backup`、`inspect_backup`、`restore_backup`，命令总数变为二十八个。取舍见 [ADR-0010](decisions/0010-backup-format.md)。
+- 新增 Rust 用例覆盖整空间备份恢复与拒绝损坏或缺文件的备份，`cargo test` 现为 13 个用例；A17–A19 桌面验收记录见[迭代 009](development/iterations/iteration-009.md)。

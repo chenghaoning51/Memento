@@ -1,4 +1,5 @@
 mod attachments;
+mod backup;
 mod commands;
 mod db;
 mod entries;
@@ -56,6 +57,9 @@ pub fn run() {
             commands::open_letter,
             commands::save_letter_reply,
             commands::export_entries,
+            commands::create_backup,
+            commands::inspect_backup,
+            commands::restore_backup,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Memento");

@@ -769,6 +769,17 @@ button:focus-visible {
   color: var(--blue);
 }
 
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.settings-actions .primary-button {
+  margin-top: 0;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

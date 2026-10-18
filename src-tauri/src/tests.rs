@@ -6,6 +6,7 @@ use rusqlite::Connection;
 use uuid::Uuid;
 
 use crate::attachments::{self, repository as attachment_repository, Attachment};
+use crate::backup;
 use crate::db::migrations;
 use crate::entries::{repository, EntryDraft, SearchQuery};
 use crate::letters::{self, repository as letter_repository, LetterDraft};
@@ -685,3 +686,85 @@ fn letter_status_follows_stored_unlock_moment() {
     assert_eq!(letters::status_at(new_york, "2026-11-01T04:00:00Z"), letters::STATUS_UNLOCKED);
 }
 
+/// A17、A18：备份可校验、可恢复；损坏的备份在恢复前被拒绝。
+#[test]
+fn backup_restores_the_whole_space_and_rejects_damage() {
+    let root = temp_library_root("backup");
+    let backup_parent = temp_library_root("backup-out");
+    let library = Library::open(root.clone()).unwrap();
+
+    write_entry(&library, "entry-1", "2026-10-17", "备份前的日记", "今天下雨了。", CREATED_AT);
+    library
+        .with_connection(|connection| {
+            tag_repository::add(connection, "entry-1", "备份")?;
+            letter_repository::insert(
+                connection,
+                "letter-1",
+                &LetterDraft {
+                    title: "三个月后".to_string(),
+                    content_json: EMPTY_CONTENT_JSON.to_string(),
+                    content_text: "写给自己。".to_string(),
+                    unlock_at_utc: "2027-01-01T00:00:00Z".to_string(),
+                    unlock_timezone: "Asia/Shanghai".to_string(),
+                },
+                letters::STATUS_LOCKED,
+                CREATED_AT,
+            )
+        })
+        .unwrap();
+
+    let summary = library
+        .with_connection(|connection| {
+            backup::create(connection, &root, &backup_parent, CREATED_AT, "0.1.0")
+        })
+        .unwrap();
+    let directory = PathBuf::from(&summary.directory);
+    assert!(directory.join("manifest.json").exists());
+
+    // 预检读出内容规模；备份之后又写了一篇，恢复应该把它换掉。
+    let info = backup::inspect(&directory).unwrap();
+    assert_eq!(info.entry_count, 1);
+    assert_eq!(info.letter_count, 1);
+    write_entry(&library, "entry-2", "2026-10-18", "备份之后", "后来写的。", CREATED_AT);
+
+    let restored = library
+        .with_connection(|connection| {
+            backup::restore(connection, &root, &directory, "2026-10-18T09:00:00Z", "0.1.0")
+        })
+        .unwrap();
+    assert_eq!(restored.entry_count, 1);
+    assert_eq!(restored.letter_count, 1);
+    assert!(PathBuf::from(&restored.pre_restore_backup).exists());
+
+    let entries = library
+        .with_connection(|connection| repository::list_by_date(connection, "2026-10-18"))
+        .unwrap();
+    assert!(entries.is_empty());
+    let tags = library
+        .with_connection(|connection| tag_repository::list_for_entry(connection, "entry-1"))
+        .unwrap();
+    assert_eq!(tags.len(), 1);
+    let letter = library
+        .with_connection(|connection| letter_repository::find(connection, "letter-1"))
+        .unwrap();
+    assert!(letter.is_some());
+
+    // 改坏的备份在恢复前被拒绝，当前空间不受影响：校验值不符与文件缺失都算坏。
+    std::fs::write(directory.join("memento.db"), b"broken").unwrap();
+    assert!(matches!(backup::inspect(&directory), Err(AppError::InvalidBackup(_))));
+    std::fs::remove_file(directory.join("memento.db")).unwrap();
+    assert!(matches!(backup::inspect(&directory), Err(AppError::InvalidBackup(_))));
+    assert!(matches!(
+        library.with_connection(|connection| {
+            backup::restore(connection, &root, &directory, "2026-10-18T10:00:00Z", "0.1.0")
+        }),
+        Err(AppError::InvalidBackup(_))
+    ));
+    let entries = library
+        .with_connection(|connection| repository::list_by_date(connection, "2026-10-17"))
+        .unwrap();
+    assert_eq!(entries.len(), 1);
+
+    std::fs::remove_dir_all(&root).ok();
+    std::fs::remove_dir_all(&backup_parent).ok();
+}

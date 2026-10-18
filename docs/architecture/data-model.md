@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表，M2-03 的迁移 v3 加入 `tags` 与 `entry_tags`，M3-02 的迁移 v4 给 `entries` 加 `search_text` 列，M4-01 的迁移 v5 加入 `letters` 表。当前实际落地的五张表：
+M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表，M2-03 的迁移 v3 加入 `tags` 与 `entry_tags`，M3-02 的迁移 v4 给 `entries` 加 `search_text` 列，M4-01 的迁移 v5 加入 `letters` 表。当前实际落地的五张表（模式版本 5）：
 
 ```sql
 CREATE TABLE entries (
@@ -107,9 +107,14 @@ settings
 
 ## 备份格式
 
-完整备份应包含：
+备份是一个目录（见 [ADR-0010](../decisions/0010-backup-format.md)）：
 
-1. 数据库或可迁移的数据快照。
-2. `attachments/` 和缩略图。
-3. `manifest.json`，记录应用版本、模式版本、文件清单和校验值。
-4. 恢复前的当前空间备份。
+```text
+memento-backup-<YYYYMMDDHHMMSS>/
+  memento.db      VACUUM INTO 写出的一致快照
+  attachments/
+  thumbnails/
+  manifest.json   format / app_version / schema_version / created_at_utc / files[]
+```
+
+`files[]` 每项是相对路径、字节数与 SHA-256。恢复前先在暂存目录把快照升级到当前模式版本，再在一条事务里换掉 `entries`、`attachments`、`tags`、`entry_tags`、`letters` 五张表，最后替换附件与缩略图目录；恢复前的当前空间写在数据目录的 `backups/` 下。

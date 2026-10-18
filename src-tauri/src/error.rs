@@ -11,6 +11,7 @@ pub enum AppError {
     MissingLetter(String),
     LetterLocked,
     LetterExpired,
+    InvalidBackup(String),
 }
 
 impl std::fmt::Display for AppError {
@@ -28,6 +29,7 @@ impl std::fmt::Display for AppError {
             AppError::MissingLetter(id) => write!(f, "信件 {id} 已不存在。"),
             AppError::LetterLocked => write!(f, "这封信还没有到开启时间。"),
             AppError::LetterExpired => write!(f, "这封信已经到期，原信不能再修改了。"),
+            AppError::InvalidBackup(message) => write!(f, "{message}"),
         }
     }
 }
@@ -43,6 +45,12 @@ impl From<rusqlite::Error> for AppError {
 impl From<std::io::Error> for AppError {
     fn from(error: std::io::Error) -> Self {
         AppError::Io(error)
+    }
+}
+
+impl From<serde_json::Error> for AppError {
+    fn from(error: serde_json::Error) -> Self {
+        AppError::InvalidBackup(format!("备份清单读写失败：{error}"))
     }
 }
 
