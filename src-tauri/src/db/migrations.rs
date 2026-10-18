@@ -47,6 +47,22 @@ const MIGRATIONS: &[&str] = &[
      CREATE INDEX entry_tags_by_tag ON entry_tags (tag_id);",
     // v4：搜索列。标题与正文折叠空白、转小写后拼成一段文本，查询时做子串匹配。
     "ALTER TABLE entries ADD COLUMN search_text TEXT NOT NULL DEFAULT '';",
+    // v5：未来信件。开启时刻存 UTC，另存创建时的时区用于解释用户原本的意图。
+    "CREATE TABLE letters (
+        id TEXT PRIMARY KEY NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        content_json TEXT NOT NULL,
+        content_text TEXT NOT NULL DEFAULT '',
+        unlock_at_utc TEXT NOT NULL,
+        unlock_timezone TEXT NOT NULL,
+        status TEXT NOT NULL,
+        reply_json TEXT,
+        reply_text TEXT,
+        opened_at_utc TEXT,
+        created_at_utc TEXT NOT NULL,
+        updated_at_utc TEXT NOT NULL
+     );
+     CREATE INDEX letters_by_unlock ON letters (unlock_at_utc);",
 ];
 
 pub fn target_version() -> i64 {

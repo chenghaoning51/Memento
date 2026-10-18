@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::attachments::{self, repository as attachment_repository, Attachment};
 use crate::db::migrations;
 use crate::entries::{repository, EntryDraft, SearchQuery};
+use crate::letters::{self, repository as letter_repository, LetterDraft};
 use crate::error::AppError;
 use crate::library::Library;
 use crate::tags::{self, repository as tag_repository};
@@ -554,5 +555,81 @@ fn sample_png(width: u32, height: u32) -> Vec<u8> {
         )
         .unwrap();
     buffer
+}
+
+/// A13、A14：未到期不可读，到期后能读原信并单独保存回应，打开时间不被覆盖。
+#[test]
+fn letter_stays_locked_until_unlock_time_and_keeps_reply() {
+    let root = temp_library_root("letter");
+    let id = Uuid::new_v4().to_string();
+    let draft = LetterDraft {
+        title: "给三个月后的自己".to_string(),
+        content_json: EMPTY_CONTENT_JSON.to_string(),
+        content_text: "现在是十月的夜里，窗外有风。".to_string(),
+        unlock_at_utc: "2026-12-24T16:00:00.000Z".to_string(),
+        unlock_timezone: "Asia/Shanghai".to_string(),
+    };
+
+    let library = Library::open(root.clone()).unwrap();
+    library
+        .with_connection(|connection| {
+            letter_repository::insert(connection, &id, &draft, letters::STATUS_LOCKED, CREATED_AT)
+        })
+        .unwrap();
+
+    // 没到期：状态停在 locked，开启时刻与时区都按写信时的样子存着。
+    let letter = library
+        .with_connection(|connection| letter_repository::find(connection, &id))
+        .unwrap()
+        .unwrap();
+    assert_eq!(letter.status, letters::STATUS_LOCKED);
+    assert_eq!(letter.unlock_at_utc, draft.unlock_at_utc);
+    assert_eq!(letter.unlock_timezone, "Asia/Shanghai");
+    assert_eq!(letters::status_at(&letter.unlock_at_utc, "2026-10-17T13:40:00Z"), letters::STATUS_LOCKED);
+
+    // 到期：状态推进到 opened 并记下打开时间，原信正文不变。
+    let opened_at = "2026-12-24T16:00:01Z";
+    library
+        .with_connection(|connection| letter_repository::mark_opened(connection, &id, opened_at))
+        .unwrap();
+    let opened = library
+        .with_connection(|connection| letter_repository::find(connection, &id))
+        .unwrap()
+        .unwrap();
+    assert_eq!(opened.status, letters::STATUS_OPENED);
+    assert_eq!(opened.opened_at_utc.as_deref(), Some(opened_at));
+    assert_eq!(opened.content_text, draft.content_text);
+
+    // 回应独立保存：原信不动，再读一次回应还在，打开时间不被覆盖。
+    library
+        .with_connection(|connection| {
+            letter_repository::save_reply(connection, &id, EMPTY_CONTENT_JSON, "三个月后再看，已经过去了。", "2026-12-25T01:00:00Z")
+        })
+        .unwrap();
+    library
+        .with_connection(|connection| letter_repository::mark_opened(connection, &id, "2026-12-26T01:00:00Z"))
+        .unwrap();
+    let replied = library
+        .with_connection(|connection| letter_repository::find(connection, &id))
+        .unwrap()
+        .unwrap();
+    assert_eq!(replied.content_text, draft.content_text);
+    assert_eq!(replied.reply_text.as_deref(), Some("三个月后再看，已经过去了。"));
+    assert_eq!(replied.opened_at_utc.as_deref(), Some(opened_at));
+
+    std::fs::remove_dir_all(&root).ok();
+}
+
+/// 状态只看存下来的 UTC 时刻：跨午夜与夏令时都不重新换算。
+#[test]
+fn letter_status_follows_stored_unlock_moment() {
+    // 2026-10-18 00:00（Asia/Shanghai）与 2026-11-01 00:00（America/New_York，夏令时结束当天）。
+    let shanghai = "2026-10-16T16:00:00.000Z";
+    assert_eq!(letters::status_at(shanghai, "2026-10-16T15:59:59Z"), letters::STATUS_LOCKED);
+    assert_eq!(letters::status_at(shanghai, "2026-10-16T16:00:00Z"), letters::STATUS_UNLOCKED);
+
+    let new_york = "2026-11-01T04:00:00.000Z";
+    assert_eq!(letters::status_at(new_york, "2026-11-01T03:59:59Z"), letters::STATUS_LOCKED);
+    assert_eq!(letters::status_at(new_york, "2026-11-01T04:00:00Z"), letters::STATUS_UNLOCKED);
 }
 

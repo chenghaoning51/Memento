@@ -3,6 +3,7 @@ mod commands;
 mod db;
 mod entries;
 mod error;
+mod letters;
 mod library;
 mod tags;
 
@@ -45,6 +46,13 @@ pub fn run() {
             commands::list_entry_tags,
             commands::add_entry_tag,
             commands::remove_entry_tag,
+            commands::list_letters,
+            commands::get_letter,
+            commands::create_letter,
+            commands::update_letter,
+            commands::delete_letter,
+            commands::open_letter,
+            commands::save_letter_reply,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Memento");

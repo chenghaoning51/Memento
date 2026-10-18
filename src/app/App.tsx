@@ -3,6 +3,7 @@ import { AppShell } from "./AppShell";
 import type { AppPage } from "./navigation";
 import { CalendarPage } from "../features/calendar/CalendarPage";
 import { JournalPage } from "../features/journal/JournalPage";
+import { LettersPage } from "../features/letters/LettersPage";
 import { SectionPage } from "../features/placeholder/SectionPage";
 import { SearchPage } from "../features/search/SearchPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
@@ -73,12 +74,14 @@ export default function App() {
       {page === "search" && (
         <SearchPage onOpenEntry={(entryDate, entryId) => openJournal("search", entryDate, entryId)} />
       )}
+      {page === "letters" && <LettersPage />}
       {page === "trash" && <TrashPage />}
       {page === "settings" && <SettingsPage />}
       {page !== "today" &&
         page !== "timeline" &&
         page !== "calendar" &&
         page !== "search" &&
+        page !== "letters" &&
         page !== "trash" &&
         page !== "settings" && <SectionPage page={page} />}
     </AppShell>

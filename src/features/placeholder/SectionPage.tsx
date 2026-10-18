@@ -2,11 +2,10 @@ import { pageTitles, type AppPage } from "../../app/navigation";
 
 type PlaceholderPage = Exclude<
   AppPage,
-  "today" | "timeline" | "calendar" | "search" | "trash" | "settings"
+  "today" | "timeline" | "calendar" | "search" | "letters" | "trash" | "settings"
 >;
 
 const sectionCopy: Record<PlaceholderPage, string> = {
-  letters: "写给未来的信，会在约定的日子打开。",
   collection: "收藏那些不想忘记的小东西。",
 };
 

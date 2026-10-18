@@ -9,6 +9,7 @@ use crate::entries::{
     repository, DeletedEntry, Entry, EntryDateSummary, EntryDraft, EntrySummary, SearchQuery,
 };
 use crate::error::{AppError, AppResult};
+use crate::letters::{self, repository as letter_repository, Letter, LetterDraft};
 use crate::library::{Library, LibraryInfo};
 use crate::tags::{self, repository as tag_repository, Tag};
 
@@ -213,6 +214,116 @@ pub fn delete_attachment(library: State<'_, Library>, id: String) -> AppResult<(
         attachments::remove_file(library.root(), &attachments::thumbnail_path(&id));
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn list_letters(library: State<'_, Library>) -> AppResult<Vec<Letter>> {
+    let now = now_utc();
+    library.with_connection(|connection| {
+        let mut letters = letter_repository::list(connection)?;
+        // 状态在每次读取时按当前 UTC 推进：应用关着的时候到期，重开进页面就正确。
+        for letter in letters.iter_mut() {
+            if letter.status == letters::STATUS_LOCKED && now >= letter.unlock_at_utc {
+                letter.status = letters::STATUS_UNLOCKED.to_string();
+            }
+        }
+        Ok(letters)
+    })
+}
+
+#[tauri::command]
+pub fn get_letter(library: State<'_, Library>, id: String) -> AppResult<Letter> {
+    let now = now_utc();
+    library.with_connection(|connection| {
+        let mut letter =
+            letter_repository::find(connection, &id)?.ok_or_else(|| AppError::MissingLetter(id.clone()))?;
+        if letter.status == letters::STATUS_LOCKED && now >= letter.unlock_at_utc {
+            letter.status = letters::STATUS_UNLOCKED.to_string();
+        }
+        Ok(letter)
+    })
+}
+
+#[tauri::command]
+pub fn create_letter(library: State<'_, Library>, draft: LetterDraft) -> AppResult<Letter> {
+    let id = Uuid::new_v4().to_string();
+    let now = now_utc();
+    let status = letters::status_at(&draft.unlock_at_utc, &now);
+
+    library.with_connection(|connection| {
+        letter_repository::insert(connection, &id, &draft, status, &now)?;
+        letter_repository::find(connection, &id)?
+            .ok_or_else(|| AppError::MissingLetter(id.clone()))
+    })
+}
+
+/// 改信只在到期前允许：已经能读的信不能回头改原文，只能留回应。
+#[tauri::command]
+pub fn update_letter(library: State<'_, Library>, id: String, draft: LetterDraft) -> AppResult<Letter> {
+    let now = now_utc();
+    let status = letters::status_at(&draft.unlock_at_utc, &now);
+
+    library.with_connection(|connection| {
+        let existing =
+            letter_repository::find(connection, &id)?.ok_or_else(|| AppError::MissingLetter(id.clone()))?;
+        // 只看状态列不够：到期但还没打开过的信，库里的状态仍是 locked，同样不能再改原文。
+        if existing.status != letters::STATUS_LOCKED || now >= existing.unlock_at_utc {
+            return Err(AppError::LetterExpired);
+        }
+        if !letter_repository::update(connection, &id, &draft, status, &now)? {
+            return Err(AppError::MissingLetter(id.clone()));
+        }
+        letter_repository::find(connection, &id)?
+            .ok_or_else(|| AppError::MissingLetter(id.clone()))
+    })
+}
+
+#[tauri::command]
+pub fn delete_letter(library: State<'_, Library>, id: String) -> AppResult<()> {
+    library.with_connection(|connection| {
+        if !letter_repository::delete(connection, &id)? {
+            return Err(AppError::MissingLetter(id.clone()));
+        }
+        Ok(())
+    })
+}
+
+/// 打开原信：只有到期之后才能读，读到就记下打开时间。
+#[tauri::command]
+pub fn open_letter(library: State<'_, Library>, id: String) -> AppResult<Letter> {
+    let now = now_utc();
+    library.with_connection(|connection| {
+        let letter =
+            letter_repository::find(connection, &id)?.ok_or_else(|| AppError::MissingLetter(id.clone()))?;
+        if now < letter.unlock_at_utc {
+            return Err(AppError::LetterLocked);
+        }
+        letter_repository::mark_opened(connection, &id, &now)?;
+        letter_repository::find(connection, &id)?
+            .ok_or_else(|| AppError::MissingLetter(id.clone()))
+    })
+}
+
+#[tauri::command]
+pub fn save_letter_reply(
+    library: State<'_, Library>,
+    id: String,
+    reply_json: String,
+    reply_text: String,
+) -> AppResult<Letter> {
+    let now = now_utc();
+    library.with_connection(|connection| {
+        let letter =
+            letter_repository::find(connection, &id)?.ok_or_else(|| AppError::MissingLetter(id.clone()))?;
+        if now < letter.unlock_at_utc {
+            return Err(AppError::LetterLocked);
+        }
+        if !letter_repository::save_reply(connection, &id, &reply_json, &reply_text, &now)? {
+            return Err(AppError::MissingLetter(id.clone()));
+        }
+        letter_repository::find(connection, &id)?
+            .ok_or_else(|| AppError::MissingLetter(id.clone()))
+    })
 }
 
 /// 自定义协议 `attachment://`：按附件 ID 把原图读给编辑器。

@@ -8,6 +8,9 @@ pub enum AppError {
     MissingEntry(String),
     UnsupportedImage(String),
     TagTooLong,
+    MissingLetter(String),
+    LetterLocked,
+    LetterExpired,
 }
 
 impl std::fmt::Display for AppError {
@@ -22,6 +25,9 @@ impl std::fmt::Display for AppError {
             AppError::MissingEntry(id) => write!(f, "日记 {id} 已不存在，无法保存"),
             AppError::UnsupportedImage(message) => write!(f, "{message}"),
             AppError::TagTooLong => write!(f, "标签最多 32 个字符。"),
+            AppError::MissingLetter(id) => write!(f, "信件 {id} 已不存在。"),
+            AppError::LetterLocked => write!(f, "这封信还没有到开启时间。"),
+            AppError::LetterExpired => write!(f, "这封信已经到期，原信不能再修改了。"),
         }
     }
 }

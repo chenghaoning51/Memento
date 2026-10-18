@@ -1254,3 +1254,243 @@ button:focus-visible {
     grid-column: 1 / -1;
   }
 }
+
+/* ---------- 未来信箱 ---------- */
+.section-hint {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.letters-layout {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 28px;
+  margin-top: 26px;
+}
+
+.letter-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-content: start;
+}
+
+.letter-item {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 3px 6px;
+  padding: 10px 9px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.letter-item:hover {
+  background: #f7f6f1;
+}
+
+.letter-item.is-active {
+  border-color: #dfe2ea;
+  background: #f4f5fa;
+}
+
+.letter-mark {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  grid-row: span 3;
+  place-items: center;
+  border: 1px solid #ddd9cd;
+  border-radius: 50%;
+  color: var(--brown);
+  background: #faf7f0;
+}
+
+.letter-mark.is-open {
+  border-color: #cfd6c9;
+  color: var(--sage);
+  background: #f2f5ef;
+}
+
+.letter-heading {
+  overflow: hidden;
+  color: #3c3e3b;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.letter-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.letter-when {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.letter-sheet {
+  display: flex;
+  min-height: 420px;
+  flex-direction: column;
+  padding: 22px 28px 18px;
+  border: 1px solid #e3dfd5;
+  background: var(--sheet);
+  box-shadow: 0 5px 17px rgb(48 43 35 / 4%);
+}
+
+.letter-title-input {
+  width: 100%;
+  margin-top: 22px;
+  padding: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 21px;
+}
+
+.letter-title-input::placeholder {
+  color: #b9b6ab;
+}
+
+.letter-title-input:focus,
+.letter-input:focus,
+.letter-reply-input:focus {
+  outline: none;
+}
+
+.letter-input {
+  width: 100%;
+  min-height: 220px;
+  flex: 1;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  color: #3c3e3b;
+  background: transparent;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 15px;
+  line-height: 1.9;
+  resize: none;
+}
+
+.letter-input::placeholder {
+  color: #b9b6ab;
+}
+
+.letter-unlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eeece4;
+}
+
+.letter-unlock-label {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.letter-date {
+  padding: 4px 6px;
+  border: 1px solid #e2dfd4;
+  border-radius: 3px;
+  color: #4a4c48;
+  background: #fcfbf7;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.letter-unlock-hint {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.letter-title {
+  margin: 20px 0 0;
+  color: var(--ink);
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.letter-body {
+  flex: 1;
+  margin: 14px 0 0;
+  color: #3c3e3b;
+  font-family: "Songti SC", "SimSun", serif;
+  font-size: 15px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.letter-reply {
+  display: grid;
+  gap: 8px;
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid #eeece4;
+}
+
+.letter-reply-label {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.letter-reply-input {
+  width: 100%;
+  min-height: 92px;
+  padding: 10px 12px;
+  border: 1px solid #e3dfd5;
+  border-radius: 4px;
+  color: #3c3e3b;
+  background: #fcfbf7;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.8;
+  resize: vertical;
+}
+
+.letter-reply .link-button {
+  justify-self: start;
+}
+
+.letter-sheet .sheet-footer {
+  margin-top: 18px;
+}
+
+.letter-sheet .link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 900px) {
+  .letters-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .letter-sheet {
+    min-height: 360px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .letter-unlock {
+    flex-wrap: wrap;
+  }
+}

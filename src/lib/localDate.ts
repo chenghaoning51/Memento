@@ -30,6 +30,18 @@ export function formatCalendarDate(entryDate: string): string {
   }).format(parseLocalDate(entryDate));
 }
 
+/** 显示完整时刻：年份、日期与时分都按本机时区。 */
+export function formatMoment(isoUtc: string): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(isoUtc));
+}
+
 export function formatClockTime(isoUtc: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
     hour: "2-digit",

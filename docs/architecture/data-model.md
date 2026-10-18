@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表，M2-03 的迁移 v3 加入 `tags` 与 `entry_tags`，M3-02 的迁移 v4 给 `entries` 加 `search_text` 列。当前实际落地的四张表：
+M1 已创建数据库与迁移系统；M2-02 的迁移 v2 加入 `attachments` 表，M2-03 的迁移 v3 加入 `tags` 与 `entry_tags`，M3-02 的迁移 v4 给 `entries` 加 `search_text` 列，M4-01 的迁移 v5 加入 `letters` 表。当前实际落地的五张表：
 
 ```sql
 CREATE TABLE entries (
@@ -53,7 +53,25 @@ CREATE TABLE entry_tags (
 CREATE INDEX entry_tags_by_tag ON entry_tags (tag_id);
 ```
 
-迁移版本记录在 `PRAGMA user_version`，不再使用 `schema_meta` 表（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。`letters`、`settings` 仍为目标设计，随 M4 的迁移增量加入；备份容器格式在 M5 前确定。具体契约改变或选型前先写 ADR。
+```sql
+CREATE TABLE letters (
+  id              TEXT PRIMARY KEY NOT NULL,
+  title           TEXT NOT NULL DEFAULT '',
+  content_json    TEXT NOT NULL,
+  content_text    TEXT NOT NULL DEFAULT '',
+  unlock_at_utc   TEXT NOT NULL,
+  unlock_timezone TEXT NOT NULL,
+  status          TEXT NOT NULL,
+  reply_json      TEXT,
+  reply_text      TEXT,
+  opened_at_utc   TEXT,
+  created_at_utc  TEXT NOT NULL,
+  updated_at_utc  TEXT NOT NULL
+);
+CREATE INDEX letters_by_unlock ON letters (unlock_at_utc);
+```
+
+迁移版本记录在 `PRAGMA user_version`，不再使用 `schema_meta` 表（见 [ADR-0002](../decisions/0002-sqlite-storage.md)）。`settings` 仍为目标设计，随对应能力增量加入；备份容器格式在 M5 前确定。具体契约改变或选型前先写 ADR。
 
 ## 设计目标
 
@@ -61,21 +79,9 @@ CREATE INDEX entry_tags_by_tag ON entry_tags (tag_id);
 
 ## 核心表
 
-`entries`、`attachments`、`tags`、`entry_tags` 已实现，字段见上文建表语句。以下为目标设计：
+`entries`、`attachments`、`tags`、`entry_tags`、`letters` 已实现，字段见上文建表语句。以下为目标设计：
 
 ```text
-letters
-- id
-- title
-- body_json
-- body_text
-- unlock_at_utc
-- unlock_timezone
-- status
-- opened_at_utc
-- reply_json
-- created_at_utc
-
 settings
 - key
 - value
@@ -92,6 +98,7 @@ settings
 - 编辑器正文同时保存结构化 JSON 和纯文本副本，后者用于摘要和搜索。当前格式为 version 2，即 ProseMirror 文档，例如 `{"version":2,"type":"doc","content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"标题"}]}]}`；version 1 把文字放在段落的 `text` 字段里，读取时自动升级为行内节点。未知高版本拒绝编辑，见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)。
 - `excerpt` 由 Rust 侧从 `content_text` 折叠空白后截取前 80 字符，不信任前端传入。
 - `search_text` 是派生列：标题与正文各自折叠空白后转小写，用换行连接。每次保存与 `excerpt` 在同一次 UPDATE 里重算；迁移 v4 时对旧库按现有标题与正文回填一次。查询用转义后的 `LIKE` 子串匹配，`%`、`_`、`\` 按字面处理。
+- 信件把开启时刻存成 UTC 的 `unlock_at_utc`，另存写信时区 `unlock_timezone`（IANA 名称）。`status` 只写 `locked`/`unlocked`，读取时在内存里按当前 UTC 推进；`opened_at_utc` 只在第一次打开时写入，之后不再覆盖。回应独立存 `reply_json` / `reply_text`，不改原信字段。见 [ADR-0008](../decisions/0008-letters-unlock-time.md)。
 - 数据库迁移必须带版本号，并在启动时按顺序执行；`user_version` 高于当前支持版本时启动失败并拒绝写入。
 
 ## 搜索策略
