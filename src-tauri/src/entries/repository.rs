@@ -156,7 +156,7 @@ pub fn list_recent(
 /// 回收站：只列软删除的日记，最近删除的排在前面。
 pub fn list_deleted(connection: &Connection) -> AppResult<Vec<DeletedEntry>> {
     let mut statement = connection.prepare(
-        "SELECT id, entry_date, excerpt, cover_attachment_id, created_at_utc, deleted_at_utc
+        "SELECT id, entry_date, title, excerpt, cover_attachment_id, created_at_utc, deleted_at_utc
          FROM entries
          WHERE deleted_at_utc IS NOT NULL
          ORDER BY deleted_at_utc DESC, id DESC",
@@ -165,10 +165,11 @@ pub fn list_deleted(connection: &Connection) -> AppResult<Vec<DeletedEntry>> {
         Ok(DeletedEntry {
             id: row.get(0)?,
             entry_date: row.get(1)?,
-            excerpt: row.get(2)?,
-            cover_attachment_id: row.get(3)?,
-            created_at_utc: row.get(4)?,
-            deleted_at_utc: row.get(5)?,
+            title: row.get(2)?,
+            excerpt: row.get(3)?,
+            cover_attachment_id: row.get(4)?,
+            created_at_utc: row.get(5)?,
+            deleted_at_utc: row.get(6)?,
         })
     })?;
 

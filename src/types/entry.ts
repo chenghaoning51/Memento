@@ -66,6 +66,7 @@ export type Tag = {
 export type DeletedEntry = {
   id: string;
   entryDate: string;
+  title: string;
   excerpt: string;
   coverAttachmentId: string | null;
   createdAtUtc: string;

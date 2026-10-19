@@ -3,6 +3,7 @@ import { RotateCcw } from "lucide-react";
 import { listDeletedEntries, restoreEntry } from "../../lib/entryApi";
 import { formatCalendarDate, formatClockTime } from "../../lib/localDate";
 import type { DeletedEntry } from "../../types/entry";
+import { errorText } from "../../lib/errorText";
 
 export function TrashPage() {
   const [entries, setEntries] = useState<DeletedEntry[] | null>(null);
@@ -13,7 +14,7 @@ export function TrashPage() {
   }, []);
 
   useEffect(() => {
-    load().catch((cause: unknown) => setError(String(cause)));
+    load().catch((cause: unknown) => setError(errorText(cause)));
   }, [load]);
 
   const restore = async (id: string) => {
@@ -22,7 +23,7 @@ export function TrashPage() {
       await load();
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 
@@ -45,7 +46,7 @@ export function TrashPage() {
                 <span className="trash-date">{formatCalendarDate(entry.entryDate)}</span>
                 <span className="trash-time">删除于 {formatClockTime(entry.deletedAtUtc)}</span>
               </div>
-              <p className="trash-excerpt">{entry.excerpt || "空白日记"}</p>
+              <p className="trash-excerpt">{entry.title || entry.excerpt || "未命名的一页"}</p>
               <button className="link-button trash-restore" type="button" onClick={() => void restore(entry.id)}>
                 <RotateCcw size={12} strokeWidth={2} aria-hidden="true" />
                 恢复

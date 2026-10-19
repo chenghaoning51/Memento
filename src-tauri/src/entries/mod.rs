@@ -44,6 +44,7 @@ pub struct EntryDateSummary {
 pub struct DeletedEntry {
     pub id: String,
     pub entry_date: String,
+    pub title: String,
     pub excerpt: String,
     pub cover_attachment_id: Option<String>,
     pub created_at_utc: String,

@@ -4,6 +4,7 @@ import { attachmentSource } from "../../lib/attachmentSource";
 import { listTimeline } from "../../lib/entryApi";
 import { formatCalendarDate, formatClockTime } from "../../lib/localDate";
 import type { EntrySummary } from "../../types/entry";
+import { errorText } from "../../lib/errorText";
 
 /** 一次取多少篇；滚动到底部再取下一批，避免一次把全部日记读进内存。 */
 const PAGE_SIZE = 40;
@@ -53,7 +54,7 @@ export function TimelinePage({ onOpenEntry }: TimelinePageProps) {
       setHasMore(batch.length === PAGE_SIZE);
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     } finally {
       loadingRef.current = false;
       setLoading(false);
@@ -110,7 +111,7 @@ export function TimelinePage({ onOpenEntry }: TimelinePageProps) {
                       ) : (
                         <span className="timeline-dot" aria-hidden="true" />
                       )}
-                      <span className="timeline-excerpt">{entry.excerpt || "空白日记"}</span>
+                      <span className="timeline-excerpt">{entry.title || entry.excerpt || "未命名的一页"}</span>
                       <span className="timeline-time">{formatClockTime(entry.createdAtUtc)}</span>
                     </button>
                   </li>

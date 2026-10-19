@@ -7,6 +7,7 @@ import type { JSONContent } from "@tiptap/core";
 import { Bold, Heading2, ImagePlus, Italic, Link2, Minus, Quote, Redo2, Undo2 } from "lucide-react";
 import { attachmentSource } from "../../lib/attachmentSource";
 import { importAttachment } from "../../lib/entryApi";
+import { errorText } from "../../lib/errorText";
 
 type EntryEditorProps = {
   entryId: string;
@@ -133,7 +134,7 @@ export function EntryEditor({ entryId, content, onChange }: EntryEditorProps) {
         });
       } catch (cause) {
         failed = true;
-        setError(String(cause));
+        setError(errorText(cause));
       }
     }
     if (nodes.length === 0) return;

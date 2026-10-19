@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { addEntryTag, listEntryTags, removeEntryTag } from "../../lib/entryApi";
 import type { Tag } from "../../types/entry";
+import { errorText } from "../../lib/errorText";
 
 /** 标签栏：确认或移除都立刻写库，不等正文的自动保存。 */
 export function TagBar({ entryId }: { entryId: string }) {
@@ -13,7 +14,7 @@ export function TagBar({ entryId }: { entryId: string }) {
   useEffect(() => {
     listEntryTags(entryId)
       .then(setTags)
-      .catch((cause: unknown) => setError(String(cause)));
+      .catch((cause: unknown) => setError(errorText(cause)));
   }, [entryId]);
 
   const commit = async () => {
@@ -24,7 +25,7 @@ export function TagBar({ entryId }: { entryId: string }) {
       setValue("");
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 
@@ -33,7 +34,7 @@ export function TagBar({ entryId }: { entryId: string }) {
       setTags(await removeEntryTag(entryId, tagId));
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 

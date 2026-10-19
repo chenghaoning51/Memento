@@ -41,6 +41,6 @@ M4 要把未来信件从产品规则变成可运行的功能。产品文档已�
 - `src-tauri/src/letters/` 新增 `mod.rs`（三态常量与 `status_at`）与 `repository.rs`（列表、查找、插入、更新、删除、`mark_opened`、`save_reply`）。
 - 新增七个 Tauri 命令：`list_letters`、`get_letter`、`create_letter`、`update_letter`、`delete_letter`、`open_letter`、`save_letter_reply`，命令总数变为二十四个。
 - 前端新增 `src/features/letters/LettersPage.tsx`、`src/lib/letterApi.ts`、`src/lib/letterContent.ts`、`src/lib/unlockTime.ts` 与 `src/types/letter.ts`；导航“未来信箱”从占位变为真实页面。
-- 锁定是展示限制而不是加密：数据库里的正文是明文，产品文案不得写成“已加密”或“安全封存”。这一点沿用[信件产品文档](../product/letters.md)。
+- 锁定是展示限制而不是加密：数据库里的正文是明文，产品文案不得写成“已加密”或“安全封存”。这一点沿用[功能规则](../product/features.md#未来信箱)。
 - M5 的备份清单必须显式包含 `letters` 表（含 `reply_json` / `reply_text` / `opened_at_utc`），否则恢复后信件与回应会丢失。
 - 若将来增加到期提醒或应用锁，需要在读取推进之外再加一条机制，届时另写 ADR。

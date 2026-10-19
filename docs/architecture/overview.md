@@ -18,7 +18,9 @@ M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一�
 - 备份是一个目录：`VACUUM INTO` 生成数据库快照，复制 `attachments/` 与 `thumbnails/`，最后写带 SHA-256 清单的 `manifest.json`。恢复先预检、再自动备份当前空间，然后把快照挂上来在一条事务里换掉五张表，附件目录在事务成功后替换（见 [ADR-0010](../decisions/0010-backup-format.md)）。
 - “设置”页显示数据目录、数据库文件路径与模式版本，并提供 Markdown 导出、备份与恢复入口。
 
-尚未接入：前端测试与 CI。导航中的“收藏册”仍是占位页。
+发布边界：CSP 只放行自身资源、`ipc` 与 `http://attachment.localhost` 的图片，内联脚本、远程脚本/样式/图片与对附件协议的 `fetch` 都被拦下；打包目标为 Windows NSIS，版本 1.0.0。前端错误统一经 `src/lib/errorText.ts` 转成一句话，UI 不直接展示 `Error:` 前缀。
+
+尚未接入：前端测试与 CI。导航中的“收藏册”仍是占位页（P1）。
 
 ## 目标分层
 

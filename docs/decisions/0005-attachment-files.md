@@ -17,7 +17,7 @@ SQLite 里已经有 `entries.cover_attachment_id` 和 `attachments` 的目标设
 - 正文 JSON 的 image 节点只记 `attachmentId` 与展示用的 `width`/`height`/`alt`，不记路径、不记 Base64。列表首图读 `entries.cover_attachment_id`，取正文里第一张图的 ID。
 - 读图走自定义协议：`convertFileSrc(id, "attachment")` 生成 URL，Rust 侧 `register_uri_scheme_protocol("attachment", ...)` 按 ID 查表拿相对路径再读文件。前端不知道也不需要知道磁盘布局。
 - 导入顺序：先写原图，再写缩略图，再插数据库行。任一步失败就删掉已写的文件并返回错误，正文不变。删除附件时先删数据库行（拿到相对路径），再删两个文件。
-- **删除图片节点不自动清理附件**。软删除日记同样不动附件。永久删除与自动清理的产品规则未确定（见 [journal-entry.md](../product/journal-entry.md)），M2 不自行加入。
+- **删除图片节点不自动清理附件**。软删除日记同样不动附件。永久删除与自动清理的产品规则未确定（见[功能规则](../product/features.md#日记)），M2 不自行加入。
 
 ## 原因
 

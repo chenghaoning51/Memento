@@ -4,6 +4,7 @@ import { attachmentSource } from "../../lib/attachmentSource";
 import { listEntryDates } from "../../lib/entryApi";
 import { parseLocalDate, toLocalDateString } from "../../lib/localDate";
 import type { EntryDateSummary } from "../../types/entry";
+import { errorText } from "../../lib/errorText";
 
 const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
 
@@ -46,7 +47,7 @@ export function CalendarPage({ onOpenDate }: CalendarPageProps) {
       setDays(summaries);
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   }, []);
 

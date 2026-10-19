@@ -13,6 +13,7 @@ import {
 import { formatCalendarDate, toLocalDateString } from "../../lib/localDate";
 import { currentTimeZone, daysUntil, formatMomentInZone, unlockAtUtc, unlockLocalDate } from "../../lib/unlockTime";
 import type { Letter } from "../../types/letter";
+import { errorText } from "../../lib/errorText";
 
 const DAY_MS = 86_400_000;
 
@@ -47,7 +48,7 @@ export function LettersPage() {
 
   useEffect(() => {
     setNow(new Date());
-    load().catch((cause: unknown) => setError(String(cause)));
+    load().catch((cause: unknown) => setError(errorText(cause)));
   }, [load]);
 
   const startWriting = () => {
@@ -75,7 +76,7 @@ export function LettersPage() {
       setUnlockDate(unlockLocalDate(fresh.unlockAtUtc, fresh.unlockTimezone));
       setError(null);
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 
@@ -89,7 +90,7 @@ export function LettersPage() {
       setError(null);
       await load();
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 
@@ -118,7 +119,7 @@ export function LettersPage() {
       startWriting();
       await load();
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 
@@ -130,7 +131,7 @@ export function LettersPage() {
       setError(null);
       await load();
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 
@@ -140,7 +141,7 @@ export function LettersPage() {
       startWriting();
       await load();
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   };
 

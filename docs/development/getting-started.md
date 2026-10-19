@@ -33,9 +33,16 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 # 检查已跟踪变更的空白问题
 git diff --check
+
+# 构建 Windows 安装包（NSIS）
+pnpm tauri build
 ```
 
+安装包输出到 `src-tauri/target/release/bundle/nsis/Memento_<版本>_x64-setup.exe`；只配置了 NSIS，不产出 MSI。
+
 前端还没有测试命令，也没有 CI；前端行为依靠构建检查加真实桌面验收。Rust 侧有 `cargo test`（13 个用例），覆盖迁移、持久化、附件读写、标签、检索、信件状态、导出降级与备份恢复这类无法靠肉眼确认的行为。后续给前端引入测试工具时先写 ADR，再把实际可运行命令同步到本文和根 README；不要把规划中的命令当作已存在。
+
+发布加固的约定：CSP 只放行自身资源、`ipc` 与 `http://attachment.localhost` 的图片，新增外部资源前先确认是否真的需要；前端错误一律经 `src/lib/errorText.ts` 转成用户可读的一句话；前端 `@tauri-apps/plugin-dialog` 必须与 Rust `tauri-plugin-dialog` 同版本，否则 `pnpm tauri build` 会拒绝构建。
 
 ## 第一次启动
 
@@ -58,7 +65,7 @@ git diff --check
 
 ## 开始开发前
 
-1. 阅读[开发计划](development-plan.md)，确认本轮所属阶段和前置条件。
+1. 阅读[开发计划](plan.md)，确认本轮所属阶段和前置条件。
 2. 按[迭代流程](iteration-workflow.md)细化任务，标注[验收编号](acceptance.md)。
 3. 产品行为先写产品文档，数据或技术选择先更新架构与 ADR；新依赖决定完成后再接入。
 4. 每阶段在真实桌面环境演示和保存验收证据，达到退出门槛后才更新路线图。

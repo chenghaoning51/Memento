@@ -481,6 +481,27 @@ button:focus-visible {
   outline: none;
 }
 
+.entry-title {
+  width: 100%;
+  padding: 14px 0 10px;
+  border: 0;
+  border-bottom: 1px solid #ece8dd;
+  color: var(--ink);
+  background: transparent;
+  font-family: Georgia, "Songti SC", "SimSun", serif;
+  font-size: 22px;
+  letter-spacing: 0.3px;
+  outline: none;
+}
+
+.entry-title::placeholder {
+  color: #b6b2a7;
+}
+
+.entry-title:focus {
+  border-bottom-color: #ccd5c9;
+}
+
 .entry-editor {
   flex: 1;
   min-height: 360px;

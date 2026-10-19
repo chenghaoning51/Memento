@@ -9,9 +9,11 @@ import type { EntrySummary, SaveStatus } from "../../types/entry";
 import { EntryEditor } from "./EntryEditor";
 import { TagBar } from "./TagBar";
 import { useAutosave } from "./useAutosave";
+import { errorText } from "../../lib/errorText";
 
 type Draft = {
   id: string;
+  title: string;
   content: JSONContent;
   contentText: string;
   coverAttachmentId: string | null;
@@ -58,7 +60,7 @@ export function JournalPage({
     if (!current) return;
     const saved = await saveEntry({
       id: current.id,
-      title: "",
+      title: current.title,
       contentJson: writeContent(current.content),
       contentText: current.contentText,
       coverAttachmentId: current.coverAttachmentId,
@@ -67,7 +69,7 @@ export function JournalPage({
       list
         ? list.map((item) =>
             item.id === saved.id
-              ? { ...item, excerpt: saved.excerpt, coverAttachmentId: saved.coverAttachmentId }
+              ? { ...item, title: saved.title, excerpt: saved.excerpt, coverAttachmentId: saved.coverAttachmentId }
               : item,
           )
         : list,
@@ -96,13 +98,14 @@ export function JournalPage({
         const entry = await getEntry(id);
         setDraft({
           id: entry.id,
+          title: entry.title,
           content: readContent(entry.contentJson),
           contentText: entry.contentText,
           coverAttachmentId: entry.coverAttachmentId,
         });
         setError(null);
       } catch (cause) {
-        setError(String(cause));
+        setError(errorText(cause));
       }
     },
     [flush],
@@ -130,6 +133,7 @@ export function JournalPage({
       const entry = await createEntry(entryDate);
       setDraft({
         id: entry.id,
+        title: entry.title,
         content: readContent(entry.contentJson),
         contentText: entry.contentText,
         coverAttachmentId: entry.coverAttachmentId,
@@ -137,7 +141,7 @@ export function JournalPage({
       setError(null);
       await refreshList();
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   }, [entryDate, flush, refreshList]);
 
@@ -156,7 +160,7 @@ export function JournalPage({
         await openEntry(remaining[remaining.length - 1].id);
       }
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     }
   }, [draft, flush, openEntry, refreshList]);
 
@@ -169,6 +173,11 @@ export function JournalPage({
     });
     return () => registerLeaveGuard(null);
   }, [flush, registerLeaveGuard]);
+
+  const onTitleChange = (title: string) => {
+    setDraft((current) => (current ? { ...current, title } : current));
+    schedule();
+  };
 
   const onContentChange = (content: JSONContent, contentText: string, coverAttachmentId: string | null) => {
     setDraft((current) => (current ? { ...current, content, contentText, coverAttachmentId } : current));
@@ -213,7 +222,7 @@ export function JournalPage({
                       <img className="entry-cover" src={attachmentSource(entry.coverAttachmentId)} alt="" />
                     )}
                     <span className="entry-time">{formatClockTime(entry.createdAtUtc)}</span>
-                    <span className="entry-excerpt">{entry.excerpt || "空白日记"}</span>
+                    <span className="entry-excerpt">{entry.title || entry.excerpt || "未命名的一页"}</span>
                   </button>
                 </li>
               ))}
@@ -233,6 +242,14 @@ export function JournalPage({
 
           {draft ? (
             <>
+              <input
+                className="entry-title"
+                type="text"
+                value={draft.title}
+                placeholder="无题"
+                aria-label="日记标题"
+                onChange={(event) => onTitleChange(event.target.value)}
+              />
               <TagBar key={`tags-${draft.id}`} entryId={draft.id} />
               <EntryEditor key={`editor-${draft.id}`} entryId={draft.id} content={draft.content} onChange={onContentChange} />
             </>

@@ -13,9 +13,9 @@
 
 ## 2026-10-17 M0 开发准备
 
-- 新增[日记场景细化](product/journal-entry.md)：同日多篇、空日记不自动删除、四态保存状态（已保存/编辑中/保存中/保存失败）、800 ms 停止输入自动保存与最多 5 秒强制保存、切页与关闭前 flush、区分编辑撤销与保存失败恢复与回收站恢复。
-- 新增[未来信件场景](product/letters.md)：开启时刻按创建时区换算 UTC、锁定/到期/已打开三状态在启动与进入页面时重算、到期后只能追加回应。
-- 新增[导出与备份场景](product/backup-and-export.md)：Markdown 导出规则、完整空间备份清单、恢复预检与失败不半新半旧。
+- 新增[日记场景细化](product/features.md)：同日多篇、空日记不自动删除、四态保存状态（已保存/编辑中/保存中/保存失败）、800 ms 停止输入自动保存与最多 5 秒强制保存、切页与关闭前 flush、区分编辑撤销与保存失败恢复与回收站恢复。
+- 新增[未来信件场景](product/features.md)：开启时刻按创建时区换算 UTC、锁定/到期/已打开三状态在启动与进入页面时重算、到期后只能追加回应。
+- 新增[导出与备份场景](product/features.md)：Markdown 导出规则、完整空间备份清单、恢复预检与失败不半新半旧。
 - 新增 [ADR-0002 SQLite 存储](decisions/0002-sqlite-storage.md)：Rust 侧 rusqlite + bundled，迁移使用 `PRAGMA user_version`。
 - 新增 [ADR-0003 编辑器与正文格式](decisions/0003-editor-and-body-format.md)：M1 使用原生 textarea 与带版本的 `content_json`，M2 再评估 Tiptap。
 - 建立最小质量流程与版本基线。
@@ -62,7 +62,7 @@
 - 在真实窗口回归 A02–A09：用 SQLite 触发器注入写入失败验证 A04，用强制结束进程验证 A02 与 A05，覆盖长文粘贴、撤销重做、中文组合输入、多图导入、标签规范化与回收站恢复。
 - 修复保存失败时点侧栏切页会静默丢弃输入的问题：应用壳在切页前调用当前页面注册的守卫，守卫 flush 失败时不切换页面，并在当前页提示“还有内容没有保存成功，已停留在当前日记。请先重试保存。”。
 - 关闭窗口的行为不变：关闭前仍执行 flush，flush 失败时保留窗口与输入。
-- M2 退出条件满足，验收证据见[迭代 004](development/iterations/iteration-004.md)。
+- M2 退出条件满足，验收证据见[迭代 004](development/iterations.md#迭代-004)。
 
 ## 2026-10-17 M3-01 时间线与时间地图
 
@@ -72,7 +72,7 @@
 - “今天”页改名为日记页并泛化成任意日期，`features/today/` 随之改名为 `features/journal/`；新增 `features/timeline/TimelinePage.tsx` 与 `features/calendar/CalendarPage.tsx`。
 - 新增两个只读 Tauri 命令：`list_entry_dates`（按日期范围汇总每天篇数与当天首图）与 `list_timeline`（按日期倒序分页），命令总数变为十五个。
 - 修复从月历进入日记页时返回按钮文案写成“返回时间线”，以及进入某一天后侧栏仍高亮“今天”、点“今天”无反应的问题。
-- 新增 Rust 用例覆盖时间线分页排序与月历日期统计，`cargo test` 现为 8 个用例；A10 桌面验收记录见[迭代 005](development/iterations/iteration-005.md)。
+- 新增 Rust 用例覆盖时间线分页排序与月历日期统计，`cargo test` 现为 8 个用例；A10 桌面验收记录见[迭代 005](development/iterations.md#迭代-005)。
 
 ## 2026-10-17 M3-02 搜索与筛选
 
@@ -82,7 +82,7 @@
 - 数据库迁移 v4 给 `entries` 加 `search_text` 派生列（标题与正文折叠空白后转小写），保存时与 `excerpt` 同一次 UPDATE 重算；升级到 v4 时对旧库回填一次。取舍见 [ADR-0007](decisions/0007-search-strategy.md)。
 - 新增两个 Tauri 命令：`search_entries`（关键词、标签交集与日期范围的组合查询）与 `list_tags`（筛选按钮的标签合集），命令总数变为十七个。
 - 修复正在追加批次时修改筛选条件会被在途请求吞掉的问题（结果条数停在旧值），改为条件变化一律重查并丢弃过期响应；同时修正分批加载时右上角计数少报。
-- 新增 Rust 用例覆盖关键词、标签与日期组合检索及分页，`cargo test` 现为 9 个用例；A11、A12 桌面验收记录见[迭代 006](development/iterations/iteration-006.md)。
+- 新增 Rust 用例覆盖关键词、标签与日期组合检索及分页，`cargo test` 现为 9 个用例；A11、A12 桌面验收记录见[迭代 006](development/iterations.md#迭代-006)。
 
 ## 2026-10-17 M4-01 未来信箱
 
@@ -92,7 +92,7 @@
 - 到期后原信只读，可写一条回应单独保存（`reply_json` / `reply_text`），不覆盖原信，也不会改写第一次打开的时间。
 - 迁移 v5 新增 `letters` 表与 `letters_by_unlock` 索引；新增七个 Tauri 命令：`list_letters`、`get_letter`、`create_letter`、`update_letter`、`delete_letter`、`open_letter`、`save_letter_reply`，命令总数变为二十四个。
 - 修复四个缺陷：换时区后阅读态顶栏与列表日期对不上；换时区编辑会让开启时刻漂移；“还有 N 天”把十几秒说成 1 天；到期但尚未打开的信仍能被编辑。
-- 新增两个 Rust 用例覆盖锁定到打开的状态推进、回应独立保存与跨午夜/夏令时的时刻判定，`cargo test` 现为 11 个用例；A13、A14 桌面验收记录见[迭代 007](development/iterations/iteration-007.md)。
+- 新增两个 Rust 用例覆盖锁定到打开的状态推进、回应独立保存与跨午夜/夏令时的时刻判定，`cargo test` 现为 11 个用例；A13、A14 桌面验收记录见[迭代 007](development/iterations.md#迭代-007)。
 
 ## 2026-10-18 M5-01 Markdown 导出
 
@@ -101,7 +101,24 @@
 - 文件名是「日期-标题」，标题为空时用摘要前 16 个字；Windows 不允许的字符换成空格，超长截断到 60 字；同名文件追加「 (2)」「 (3)」，不覆盖已有文件。
 - 导出成功后显示导出了几篇日记、几张图片和写到哪个目录；用户在系统对话框里取消时不报错；目标不可写时返回可读错误，不留半成品。
 - 新增依赖 `tauri-plugin-dialog` 与 `@tauri-apps/plugin-dialog`，capability 增加 `dialog:default`；新增 `export` 模块与 `export_entries` 命令，命令总数变为二十五个。取舍见 [ADR-0009](decisions/0009-markdown-export.md)。
-- 新增 Rust 用例覆盖 Markdown 降级与重名不覆盖，`cargo test` 现为 12 个用例；A16 桌面验收记录见[迭代 008](development/iterations/iteration-008.md)。
+- 新增 Rust 用例覆盖 Markdown 降级与重名不覆盖，`cargo test` 现为 12 个用例；A16 桌面验收记录见[迭代 008](development/iterations.md#迭代-008)。
+
+## 2026-10-19 标题功能与文档整理
+
+- 补齐 MVP 范围里遗漏的日记标题：正文上方新增单行标题输入，占位“无题”，与正文共用 800 ms 自动保存；标题参与搜索并决定导出文件名。
+- 列表、时间线、搜索结果与回收站优先显示标题，其次摘要，都为空时显示“未命名的一页”；回收站查询补回 `title` 字段。
+- 文档合并：产品从 7 份合为 `product/README.md` 与 `product/features.md` 两份；`development/plan.md` 合并开发计划与路线图；`development/iterations.md` 合并 11 份迭代记录；`conventions.md` 并入 `iteration-workflow.md`。
+- 仓库清理：删除 Tauri 脚手架留下的 Android/iOS 图标、MSI/商店图标与未使用的功能模板，打包配置只保留 NSIS 需要的四个图标。
+- 验收 A23，记录见[迭代 011](development/iterations.md#迭代-011)。
+
+## 2026-10-19 M6 发布加固与 Windows 验收
+
+- 版本号从 0.1.0 统一到 1.0.0（`package.json`、`Cargo.toml`、`tauri.conf.json`），打包目标从 `all` 收敛到 Windows `nsis`。
+- CSP 从 `null` 改为显式策略：只放行自身资源、`ipc` 通信与 `http://attachment.localhost` 的图片；内联脚本、远程脚本/样式/图片与对附件协议的 `fetch` 都被拦下，附件只能作为图片读取。
+- 错误提示统一走新增的 `src/lib/errorText.ts`，Tauri 命令返回的字符串不再被包成 `Error: …`；九个页面完成替换。
+- 前端 `@tauri-apps/plugin-dialog` 与 Rust `tauri-plugin-dialog` 统一到 2.8.3；此前两侧版本不一致会让 `pnpm tauri build` 直接失败。
+- 交付安装包 `Memento_1.0.0_x64-setup.exe`（2,574,832 字节，SHA-256 `472507672917CC26BB0F20223C89D6247C955D57DABC10EA4FC3593782A2506B`），在同一台机器上覆盖安装后数据完整保留，重开后备份恢复链路正常。
+- A20–A22 通过：断网主流程可用、Tab 可达全部主操作、980×680 与 150% 缩放正常；搜索 28–34 ms、翻月 77–94 ms、输入到保存 822–874 ms。记录见[迭代 010](development/iterations.md#迭代-010)。
 
 ## 2026-10-18 M5-02 至 M5-04 完整备份与恢复
 
@@ -111,4 +128,4 @@
 - 恢复前先预检：manifest 是否存在、格式版本是否受支持、文件是否齐全、校验值是否一致；预检通过后展示这份备份的篇数、信数与创建时间，用户确认才继续。
 - 恢复会自动把当前空间备份到数据目录的 `backups/`，再在一条事务里换掉 `entries`、`attachments`、`tags`、`entry_tags`、`letters` 五张表；事务失败就回滚，当前空间一行都不变，附件与缩略图在事务成功后才替换。
 - 新增 `AppError::InvalidBackup` 与 `backup` 模块；新增三个 Tauri 命令 `create_backup`、`inspect_backup`、`restore_backup`，命令总数变为二十八个。取舍见 [ADR-0010](decisions/0010-backup-format.md)。
-- 新增 Rust 用例覆盖整空间备份恢复与拒绝损坏或缺文件的备份，`cargo test` 现为 13 个用例；A17–A19 桌面验收记录见[迭代 009](development/iterations/iteration-009.md)。
+- 新增 Rust 用例覆盖整空间备份恢复与拒绝损坏或缺文件的备份，`cargo test` 现为 13 个用例；A17–A19 桌面验收记录见[迭代 009](development/iterations.md#迭代-009)。

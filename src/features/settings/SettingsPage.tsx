@@ -5,6 +5,7 @@ import { createBackup, inspectBackup, restoreBackup, type BackupInfo, type Backu
 import { exportEntries, type ExportSummary } from "../../lib/exportApi";
 import { libraryInfo } from "../../lib/entryApi";
 import type { LibraryInfo } from "../../types/entry";
+import { errorText } from "../../lib/errorText";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -23,7 +24,7 @@ export function SettingsPage() {
   useEffect(() => {
     libraryInfo()
       .then(setInfo)
-      .catch((cause: unknown) => setError(String(cause)));
+      .catch((cause: unknown) => setError(errorText(cause)));
   }, []);
 
   const startExport = async () => {
@@ -34,7 +35,7 @@ export function SettingsPage() {
       setError(null);
       setExported(await exportEntries(directory));
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     } finally {
       setBusy("");
     }
@@ -48,7 +49,7 @@ export function SettingsPage() {
       setError(null);
       setBackedUp(await createBackup(parent));
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     } finally {
       setBusy("");
     }
@@ -70,7 +71,7 @@ export function SettingsPage() {
       setRestored(await restoreBackup(directory));
       setInfo(await libraryInfo());
     } catch (cause) {
-      setError(String(cause));
+      setError(errorText(cause));
     } finally {
       setBusy("");
     }

@@ -4,6 +4,7 @@ import { attachmentSource } from "../../lib/attachmentSource";
 import { listTags, searchEntries } from "../../lib/entryApi";
 import { formatCalendarDate, formatClockTime } from "../../lib/localDate";
 import type { EntrySummary, SearchQuery, Tag } from "../../types/entry";
+import { errorText } from "../../lib/errorText";
 
 /** 一次取多少条；滚动到底部再取下一批，与时间线一致。 */
 const PAGE_SIZE = 40;
@@ -34,7 +35,7 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
   useEffect(() => {
     listTags()
       .then(setTags)
-      .catch((cause) => setError(String(cause)));
+      .catch((cause) => setError(errorText(cause)));
   }, []);
 
   const runSearch = useCallback(
@@ -52,7 +53,7 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
         setHasMore(batch.length === PAGE_SIZE);
         setError(null);
       } catch (cause) {
-        if (request === requestRef.current) setError(String(cause));
+        if (request === requestRef.current) setError(errorText(cause));
       } finally {
         if (request === requestRef.current) {
           loadingRef.current = false;
@@ -172,10 +173,10 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
                 <span className="search-result-date">{formatCalendarDate(entry.entryDate)}</span>
                 <span className="search-result-body">
                   <span className="search-result-title">
-                    {entry.title || entry.excerpt || "空白日记"}
+                    {entry.title || entry.excerpt || "未命名的一页"}
                     <span className="search-result-time">{formatClockTime(entry.createdAtUtc)}</span>
                   </span>
-                  {entry.title && <span className="search-result-excerpt">{entry.excerpt || "空白日记"}</span>}
+                  {entry.title && <span className="search-result-excerpt">{entry.excerpt || "未命名的一页"}</span>}
                 </span>
                 {entry.coverAttachmentId ? (
                   <img className="search-cover" src={attachmentSource(entry.coverAttachmentId)} alt="" />
