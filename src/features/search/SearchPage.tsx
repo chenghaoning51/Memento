@@ -105,7 +105,7 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
   const stamp =
     results && results.length > 0
       ? hasMore
-        ? `已读 ${results.length} 篇`
+        ? `已加载 ${results.length} 篇`
         : `找到 ${results.length} 篇`
       : hasCondition
         ? "没有找到"
@@ -115,7 +115,6 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
     <section className="search-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
-          <p className="eyebrow">FIND IT AGAIN</p>
           <h1 id="page-title">搜索</h1>
         </div>
         <span className="date-stamp">{stamp}</span>
@@ -167,25 +166,27 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
         </div>
       ) : (
         <ul className="search-results">
-          {(results ?? []).map((entry) => (
-            <li key={entry.id}>
-              <button className="search-result" type="button" onClick={() => onOpenEntry(entry.entryDate, entry.id)}>
-                <span className="search-result-date">{formatCalendarDate(entry.entryDate)}</span>
-                <span className="search-result-body">
-                  <span className="search-result-title">
-                    {entry.title || entry.excerpt || "未命名的一页"}
-                    <span className="search-result-time">{formatClockTime(entry.createdAtUtc)}</span>
+          {(results ?? []).map((entry, index) => {
+            // 同一天的连续结果不再重复日期，日期变化时才显示一次。
+            const showDate = index === 0 || results?.[index - 1]?.entryDate !== entry.entryDate;
+            return (
+              <li key={entry.id}>
+                <button className="search-result" type="button" onClick={() => onOpenEntry(entry.entryDate, entry.id)}>
+                  <span className="search-result-date">{showDate ? formatCalendarDate(entry.entryDate) : ""}</span>
+                  <span className="search-result-body">
+                    <span className="search-result-title">{entry.title || entry.excerpt || "未命名的一页"}</span>
+                    {entry.title && <span className="search-result-excerpt">{entry.excerpt || "未命名的一页"}</span>}
                   </span>
-                  {entry.title && <span className="search-result-excerpt">{entry.excerpt || "未命名的一页"}</span>}
-                </span>
-                {entry.coverAttachmentId ? (
-                  <img className="search-cover" src={attachmentSource(entry.coverAttachmentId)} alt="" />
-                ) : (
-                  <span className="search-cover is-empty" aria-hidden="true" />
-                )}
-              </button>
-            </li>
-          ))}
+                  <span className="search-result-time">{formatClockTime(entry.createdAtUtc)}</span>
+                  {entry.coverAttachmentId ? (
+                    <img className="search-cover" src={attachmentSource(entry.coverAttachmentId)} alt="" />
+                  ) : (
+                    <span className="search-cover is-empty" aria-hidden="true" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 

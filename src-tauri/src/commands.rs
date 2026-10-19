@@ -15,6 +15,8 @@ use crate::error::{AppError, AppResult};
 use crate::export;
 use crate::letters::{self, repository as letter_repository, Letter, LetterDraft};
 use crate::library::{Library, LibraryInfo};
+use crate::location;
+use crate::LocationState;
 use crate::tags::{self, repository as tag_repository, Tag};
 
 /// 新日记的空正文：一个空段落。版本 2 对应 ADR-0004 的 Tiptap 文档格式。
@@ -30,6 +32,28 @@ fn now_utc() -> String {
 #[tauri::command]
 pub fn library_info(library: State<'_, Library>) -> AppResult<LibraryInfo> {
     library.info()
+}
+
+/// 把整个空间搬到新目录：复制数据库、附件、缩略图与自动备份，再记下新位置。
+/// 复制完成后需要重启应用，当前连接仍指向旧目录。
+#[tauri::command]
+pub fn relocate_library(
+    library: State<'_, Library>,
+    location: State<'_, LocationState>,
+    directory: String,
+) -> AppResult<()> {
+    let target = PathBuf::from(directory);
+    if target == library.root() {
+        return Ok(());
+    }
+    location::copy_space(library.root(), &target)?;
+    location::set_configured_root(&location.config_dir, Some(&target))
+}
+
+/// 回到默认数据目录。只改配置，不搬文件；重启后生效。
+#[tauri::command]
+pub fn reset_library_location(location: State<'_, LocationState>) -> AppResult<()> {
+    location::set_configured_root(&location.config_dir, None)
 }
 
 #[tauri::command]
@@ -122,6 +146,32 @@ pub fn restore_entry(library: State<'_, Library>, id: String) -> AppResult<Entry
         }
         repository::require(connection, &id)
     })
+}
+
+/// 永久删除回收站里的一篇日记：先删数据库行，再删磁盘上的原图与缩略图。
+#[tauri::command]
+pub fn purge_entry(library: State<'_, Library>, id: String) -> AppResult<()> {
+    let paths = library.with_connection(|connection| repository::purge(connection, &id))?;
+    remove_attachment_files(library.root(), &paths);
+    Ok(())
+}
+
+/// 清空回收站：返回删掉了几篇日记。
+#[tauri::command]
+pub fn purge_trash(library: State<'_, Library>) -> AppResult<usize> {
+    let (count, paths) = library.with_connection(repository::purge_deleted)?;
+    remove_attachment_files(library.root(), &paths);
+    Ok(count)
+}
+
+/// 附件文件按相对路径删除，缩略图路径由文件名里的附件 ID 推导。
+fn remove_attachment_files(root: &Path, paths: &[String]) {
+    for relative in paths {
+        attachments::remove_file(root, relative);
+        if let Some(stem) = Path::new(relative).file_stem().and_then(|value| value.to_str()) {
+            attachments::remove_file(root, &attachments::thumbnail_path(stem));
+        }
+    }
 }
 
 #[tauri::command]
@@ -354,12 +404,16 @@ pub fn attachment_response(
     response
 }
 
-/// 导出全部日记：写 Markdown 与图片到用户选定的目录。
+/// 导出日记：`entry_ids` 为空表示全部，否则只导出选中的那些。
 #[tauri::command]
-pub fn export_entries(library: State<'_, Library>, directory: String) -> AppResult<export::ExportSummary> {
+pub fn export_entries(
+    library: State<'_, Library>,
+    directory: String,
+    entry_ids: Vec<String>,
+) -> AppResult<export::ExportSummary> {
     let target = PathBuf::from(directory);
     library.with_connection(|connection| {
-        let entries = export::repository::list_for_export(connection)?;
+        let entries = export::repository::list_for_export(connection, &entry_ids)?;
         let attachments = export::repository::attachment_paths(connection)?;
         export::write_entries(&target, library.root(), &entries, &attachments)
     })

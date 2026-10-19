@@ -14,7 +14,6 @@ export function SectionPage({ page }: { page: PlaceholderPage }) {
     <section className="section-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
-          <p className="eyebrow">MEMENTO ARCHIVE</p>
           <h1 id="page-title">{pageTitles[page]}</h1>
         </div>
       </header>

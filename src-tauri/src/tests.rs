@@ -768,3 +768,186 @@ fn backup_restores_the_whole_space_and_rejects_damage() {
     std::fs::remove_dir_all(&root).ok();
     std::fs::remove_dir_all(&backup_parent).ok();
 }
+
+/// 永久删除：只接受回收站里的日记，正文、附件行与附件文件、孤儿标签一起清掉。
+#[test]
+fn purge_removes_entry_attachments_and_orphan_tags() {
+    let root = temp_library_root("purge");
+    let library = Library::open(root.clone()).unwrap();
+    let entry_id = Uuid::new_v4().to_string();
+    let attachment_id = Uuid::new_v4().to_string();
+
+    library
+        .with_connection(|connection| {
+            repository::create(connection, &entry_id, "2026-10-17", EMPTY_CONTENT_JSON, CREATED_AT)?;
+            tag_repository::add(connection, &entry_id, "工作")?;
+            tag_repository::add(connection, &entry_id, "旅行")?;
+
+            let relative = attachments::original_path(&entry_id, &attachment_id, "png");
+            attachments::write_file(library.root(), &relative, &sample_png(2, 2))?;
+            let thumbnail = attachments::thumbnail_path(&attachment_id);
+            attachments::write_file(library.root(), &thumbnail, &sample_png(1, 1))?;
+            attachment_repository::insert(
+                connection,
+                &Attachment {
+                    id: attachment_id.clone(),
+                    entry_id: entry_id.clone(),
+                    relative_path: relative,
+                    mime_type: "image/png".to_string(),
+                    file_size: 1,
+                    sha256: String::new(),
+                    width: 2,
+                    height: 2,
+                    created_at_utc: CREATED_AT.to_string(),
+                },
+            )
+        })
+        .unwrap();
+
+    // 正常日记不能直接永久删除，必须先经过回收站。
+    assert!(matches!(
+        library.with_connection(|connection| repository::purge(connection, &entry_id)),
+        Err(AppError::EntryNotInTrash)
+    ));
+
+    library
+        .with_connection(|connection| {
+            repository::set_deleted_at(connection, &entry_id, Some("2026-10-17T09:00:00Z"))
+        })
+        .unwrap();
+
+    let paths = library
+        .with_connection(|connection| repository::purge(connection, &entry_id))
+        .unwrap();
+    assert_eq!(paths.len(), 1);
+
+    // 正文、附件行与标签关系都已消失；不再被引用的标签也一起清掉。
+    assert!(matches!(
+        library.with_connection(|connection| repository::require(connection, &entry_id)),
+        Err(AppError::MissingEntry(_))
+    ));
+    assert!(library
+        .with_connection(|connection| attachment_repository::find_for_read(connection, &attachment_id))
+        .unwrap()
+        .is_none());
+    assert!(library
+        .with_connection(|connection| tag_repository::list_for_entry(connection, &entry_id))
+        .unwrap()
+        .is_empty());
+    assert!(library
+        .with_connection(tag_repository::list_all)
+        .unwrap()
+        .is_empty());
+    assert!(library
+        .with_connection(repository::list_deleted)
+        .unwrap()
+        .is_empty());
+
+    // 清空回收站：多篇一次删掉，返回篇数。
+    for index in 0..3 {
+        let id = format!("purge-{index}");
+        library
+            .with_connection(|connection| {
+                repository::create(connection, &id, "2026-10-18", EMPTY_CONTENT_JSON, CREATED_AT)?;
+                repository::set_deleted_at(connection, &id, Some("2026-10-18T09:00:00Z"))
+            })
+            .unwrap();
+    }
+    library
+        .with_connection(|connection| {
+            repository::create(connection, "kept", "2026-10-18", EMPTY_CONTENT_JSON, CREATED_AT)
+        })
+        .unwrap();
+
+    let (count, _) = library
+        .with_connection(repository::purge_deleted)
+        .unwrap();
+    assert_eq!(count, 3);
+    let remaining = library
+        .with_connection(|connection| repository::list_by_date(connection, "2026-10-18"))
+        .unwrap();
+    assert_eq!(remaining.len(), 1);
+    assert_eq!(remaining[0].id, "kept");
+
+    std::fs::remove_dir_all(&root).ok();
+}
+
+/// 选择性导出：只导出选中的日记；空列表表示全部。
+#[test]
+fn export_can_target_selected_entries() {
+    let root = temp_library_root("export-pick");
+    let library = Library::open(root.clone()).unwrap();
+
+    for (id, date, title) in [
+        ("keep-1", "2026-10-01", "留下的第一篇"),
+        ("skip", "2026-10-02", "不该导出的"),
+        ("keep-2", "2026-10-03", "留下的第二篇"),
+    ] {
+        write_entry(&library, id, date, title, "正文。", CREATED_AT);
+    }
+
+    let all = library
+        .with_connection(|connection| export::repository::list_for_export(connection, &[]))
+        .unwrap();
+    assert_eq!(all.len(), 3);
+
+    let picked = library
+        .with_connection(|connection| {
+            export::repository::list_for_export(
+                connection,
+                &["keep-1".to_string(), "keep-2".to_string()],
+            )
+        })
+        .unwrap();
+    assert_eq!(picked.len(), 2);
+    assert_eq!(picked[0].title, "留下的第一篇");
+    assert_eq!(picked[1].title, "留下的第二篇");
+
+    // 不存在的 ID 不会带出多余结果。
+    let missing = library
+        .with_connection(|connection| {
+            export::repository::list_for_export(connection, &["nope".to_string()])
+        })
+        .unwrap();
+    assert!(missing.is_empty());
+
+    std::fs::remove_dir_all(&root).ok();
+}
+
+/// 自动备份只保留最近几份，用户自己的备份目录不受影响。
+#[test]
+fn prune_keeps_only_recent_auto_backups() {
+    let root = temp_library_root("prune");
+    let backups = root.join("backups");
+    std::fs::create_dir_all(&backups).unwrap();
+
+    // 造 7 份自动备份，外加一个不是备份的目录。
+    for stamp in [
+        "20260101000000",
+        "20260102000000",
+        "20260103000000",
+        "20260104000000",
+        "20260105000000",
+        "20260106000000",
+        "20260107000000",
+    ] {
+        std::fs::create_dir_all(backups.join(format!("memento-backup-{stamp}"))).unwrap();
+    }
+    std::fs::create_dir_all(backups.join("my-own-folder")).unwrap();
+
+    let removed = backup::prune_auto_backups(&backups, 5).unwrap();
+    assert_eq!(removed.len(), 2);
+
+    let mut left: Vec<String> = std::fs::read_dir(&backups)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().to_string())
+        .collect();
+    left.sort();
+    assert_eq!(left.len(), 6);
+    assert!(left.contains(&"my-own-folder".to_string()));
+    assert!(!left.contains(&"memento-backup-20260101000000".to_string()));
+    assert!(!left.contains(&"memento-backup-20260102000000".to_string()));
+    assert!(left.contains(&"memento-backup-20260107000000".to_string()));
+
+    std::fs::remove_dir_all(&root).ok();
+}

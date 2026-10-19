@@ -193,6 +193,71 @@ pub fn set_deleted_at(
     Ok(changed == 1)
 }
 
+/// 永久删除一篇回收站里的日记：正文、附件行与标签关系一起消失。
+/// 只接受已经软删除的记录，正常日记必须先经过回收站。
+/// 返回原图相对路径，调用方据此删除磁盘文件。
+pub fn purge(connection: &Connection, id: &str) -> AppResult<Vec<String>> {
+    let deleted_at: Option<Option<String>> = connection
+        .query_row(
+            "SELECT deleted_at_utc FROM entries WHERE id = ?1",
+            [id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    match deleted_at {
+        None => return Err(AppError::MissingEntry(id.to_string())),
+        Some(None) => return Err(AppError::EntryNotInTrash),
+        Some(Some(_)) => {}
+    }
+
+    let paths = attachment_paths(connection, id)?;
+    let transaction = connection.unchecked_transaction()?;
+    transaction.execute("DELETE FROM entry_tags WHERE entry_id = ?1", [id])?;
+    transaction.execute("DELETE FROM attachments WHERE entry_id = ?1", [id])?;
+    transaction.execute("DELETE FROM entries WHERE id = ?1", [id])?;
+    transaction.execute(
+        "DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM entry_tags)",
+        [],
+    )?;
+    transaction.commit()?;
+    Ok(paths)
+}
+
+/// 清空回收站：所有软删除的日记连同附件行、标签关系与孤儿标签一起删掉。
+/// 返回删掉的篇数与原图相对路径。
+pub fn purge_deleted(connection: &Connection) -> AppResult<(usize, Vec<String>)> {
+    let mut statement = connection.prepare("SELECT id FROM entries WHERE deleted_at_utc IS NOT NULL")?;
+    let ids: Vec<String> = statement
+        .query_map([], |row| row.get(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    drop(statement);
+
+    let mut paths = Vec::new();
+    for id in &ids {
+        paths.extend(attachment_paths(connection, id)?);
+    }
+
+    let transaction = connection.unchecked_transaction()?;
+    transaction.execute_batch(
+        "DELETE FROM entry_tags WHERE entry_id IN (SELECT id FROM entries WHERE deleted_at_utc IS NOT NULL);
+         DELETE FROM attachments WHERE entry_id IN (SELECT id FROM entries WHERE deleted_at_utc IS NOT NULL);
+         DELETE FROM entries WHERE deleted_at_utc IS NOT NULL;
+         DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM entry_tags);",
+    )?;
+    transaction.commit()?;
+    Ok((ids.len(), paths))
+}
+
+/// 一篇日记的全部原图相对路径；缩略图路径由附件 ID 推导。
+fn attachment_paths(connection: &Connection, entry_id: &str) -> AppResult<Vec<String>> {
+    let mut statement =
+        connection.prepare("SELECT relative_path FROM attachments WHERE entry_id = ?1")?;
+    let paths = statement
+        .query_map([entry_id], |row| row.get(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(paths)
+}
+
 pub fn save(
     connection: &Connection,
     draft: &EntryDraft,

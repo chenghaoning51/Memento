@@ -149,7 +149,6 @@ export function LettersPage() {
     <section className="section-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
-          <p className="eyebrow">MEMENTO LETTERS</p>
           <h1 id="page-title">未来信箱</h1>
         </div>
         <button className="primary-button letter-new" type="button" onClick={startWriting}>
@@ -187,8 +186,8 @@ export function LettersPage() {
               </li>
             ))
           ) : (
-            <li className="section-empty">
-              <span>{letters === null ? "正在读取…" : "还没有写给未来的信"}</span>
+            <li className="letter-empty">
+              {letters === null ? "正在读取…" : "还没有写给未来的信"}
             </li>
           )}
         </ul>
@@ -196,10 +195,9 @@ export function LettersPage() {
         <div className="letter-sheet">
           {reading && current ? (
             <>
-              <div className="sheet-topline">
-                <span className="sheet-index">原信</span>
-                <span>{formatMomentInZone(current.unlockAtUtc, current.unlockTimezone)} 开启</span>
-              </div>
+              <p className="letter-meta">
+                {formatMomentInZone(current.unlockAtUtc, current.unlockTimezone)} 开启
+              </p>
               <h2 className="letter-title">{current.title || "没有标题的信"}</h2>
               <p className="letter-body">{current.contentText}</p>
               <div className="letter-reply">
@@ -226,10 +224,9 @@ export function LettersPage() {
             </>
           ) : (
             <>
-              <div className="sheet-topline">
-                <span className="sheet-index">{current ? "编辑" : "新信"}</span>
-                <span>{formatMomentInZone(unlockMoment, unlockZone)} 开启</span>
-              </div>
+              <p className="letter-meta">
+                {current ? "编辑这封信" : "新的一封"}，{formatMomentInZone(unlockMoment, unlockZone)} 开启
+              </p>
               <input
                 className="letter-title-input"
                 value={title}
@@ -259,7 +256,7 @@ export function LettersPage() {
                 <span className="letter-unlock-hint">当天 00:00 之后可以打开</span>
               </div>
               <div className="sheet-footer">
-                <button className="link-button letter-save" type="button" onClick={() => void save()}>
+                <button className="primary-button letter-save" type="button" onClick={() => void save()}>
                   {current ? "保存修改" : "封存这封信"}
                 </button>
                 {current && (

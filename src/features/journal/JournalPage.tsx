@@ -193,7 +193,6 @@ export function JournalPage({
               {back.label}
             </button>
           )}
-          <p className="eyebrow">A PRIVATE JOURNAL</p>
           <h1 id="page-title">{heading}</h1>
         </div>
         <time className="date-stamp" dateTime={entryDate}>{formatLocalDate(parseLocalDate(entryDate))}</time>
@@ -203,9 +202,9 @@ export function JournalPage({
         <aside className="entry-list" aria-label={listLabel}>
           <div className="entry-list-head">
             <span>{listLabel}</span>
-            <button className="icon-button" type="button" onClick={() => void startEntry()} title="写一篇新日记">
+            <button className="icon-button" type="button" onClick={() => void startEntry()} title="写一篇">
               <Plus size={16} strokeWidth={1.8} aria-hidden="true" />
-              <span className="visually-hidden">写一篇新日记</span>
+              <span className="visually-hidden">写一篇</span>
             </button>
           </div>
 
@@ -235,11 +234,6 @@ export function JournalPage({
         </aside>
 
         <article className="journal-sheet">
-          <div className="sheet-topline">
-            <span>DAILY PAGE</span>
-            <span className="sheet-index">{String(entries?.length ?? 0).padStart(2, "0")}</span>
-          </div>
-
           {draft ? (
             <>
               <input
@@ -250,7 +244,6 @@ export function JournalPage({
                 aria-label="日记标题"
                 onChange={(event) => onTitleChange(event.target.value)}
               />
-              <TagBar key={`tags-${draft.id}`} entryId={draft.id} />
               <EntryEditor key={`editor-${draft.id}`} entryId={draft.id} content={draft.content} onChange={onContentChange} />
             </>
           ) : (
@@ -261,10 +254,12 @@ export function JournalPage({
               <h2>{isToday ? "今天还没有记录" : "这一天还没有记录"}</h2>
               <p>{isToday ? "平常的一天，也可以留下一点痕迹。" : "补写这一天，也来得及。"}</p>
               <button className="primary-button" type="button" onClick={() => void startEntry()}>
-                {isToday ? "写第一篇" : "写这一天的第一篇"}
+                {isToday ? "写今天的第一篇" : "写这一天的第一篇"}
               </button>
             </div>
           )}
+
+          {draft && <TagBar key={`tags-${draft.id}`} entryId={draft.id} />}
 
           <div className="sheet-footer">
             <span className={`save-status is-${status}`} role="status">

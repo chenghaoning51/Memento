@@ -76,7 +76,6 @@ export function CalendarPage({ onOpenDate }: CalendarPageProps) {
     <section className="calendar-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
-          <p className="eyebrow">A PRIVATE JOURNAL</p>
           <h1 id="page-title">时间地图</h1>
         </div>
         <span className="date-stamp">{monthTotal > 0 ? `这个月 ${monthTotal} 篇` : "这个月还是空白"}</span>
@@ -126,7 +125,7 @@ export function CalendarPage({ onOpenDate }: CalendarPageProps) {
                   <img className="calendar-cover" src={attachmentSource(summary.coverAttachmentId)} alt="" />
                 )}
                 <span className="calendar-day">{date.getDate()}</span>
-                {summary && <span className="calendar-count">{summary.entryCount}</span>}
+                {summary && <span className="calendar-count">{summary.entryCount} 篇</span>}
               </button>
             );
           })}

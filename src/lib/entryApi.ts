@@ -70,6 +70,16 @@ export function restoreEntry(id: string): Promise<Entry> {
   return invoke<Entry>("restore_entry", { id });
 }
 
+/** 永久删除回收站里的一篇日记，原图与缩略图一并删掉。 */
+export function purgeEntry(id: string): Promise<void> {
+  return invoke<void>("purge_entry", { id });
+}
+
+/** 清空回收站，返回删掉了几篇日记。 */
+export function purgeTrash(): Promise<number> {
+  return invoke<number>("purge_trash");
+}
+
 export function listEntryTags(entryId: string): Promise<Tag[]> {
   return invoke<Tag[]>("list_entry_tags", { entryId });
 }

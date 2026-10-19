@@ -6,7 +6,7 @@ export type ExportSummary = {
   imageCount: number;
 };
 
-/** 把全部日记导出成 Markdown 与图片，写进用户选定的目录。 */
-export function exportEntries(directory: string): Promise<ExportSummary> {
-  return invoke("export_entries", { directory });
+/** 把日记导出成 Markdown 与图片，写进用户选定的目录。传空数组表示全部。 */
+export function exportEntries(directory: string, entryIds: string[] = []): Promise<ExportSummary> {
+  return invoke("export_entries", { directory, entryIds });
 }

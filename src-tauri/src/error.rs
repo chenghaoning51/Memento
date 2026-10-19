@@ -6,6 +6,8 @@ pub enum AppError {
     Io(std::io::Error),
     UnsupportedSchema(i64),
     MissingEntry(String),
+    EntryNotInTrash,
+    LibraryNotEmpty(String),
     UnsupportedImage(String),
     TagTooLong,
     MissingLetter(String),
@@ -24,6 +26,10 @@ impl std::fmt::Display for AppError {
                 "数据库模式版本 {version} 高于当前应用支持的版本，请升级 Memento 后再打开"
             ),
             AppError::MissingEntry(id) => write!(f, "日记 {id} 已不存在，无法保存"),
+            AppError::EntryNotInTrash => write!(f, "这篇日记不在回收站里，不能永久删除。"),
+            AppError::LibraryNotEmpty(path) => {
+                write!(f, "{path} 里已经有别的文件，请选一个空文件夹。")
+            }
             AppError::UnsupportedImage(message) => write!(f, "{message}"),
             AppError::TagTooLong => write!(f, "标签最多 32 个字符。"),
             AppError::MissingLetter(id) => write!(f, "信件 {id} 已不存在。"),

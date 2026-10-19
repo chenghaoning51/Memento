@@ -1,22 +1,41 @@
+@font-face {
+  font-family: "LXGW WenKai";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/lxgw-wenkai-regular.woff2") format("woff2");
+}
+
 :root {
-  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
-  color: #292b2d;
-  background: #f4f2eb;
+  /* 界面用无衬线，正文用宋体：两者分工明确，不靠字号区分层级。 */
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+  color: #2b2c2a;
+  background: #f2efe7;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --paper: #f4f2eb;
-  --sheet: #fffefa;
-  --ink: #292b2d;
-  --muted: #797b79;
-  --faint: #a2a29c;
-  --line: #dfddd5;
-  --blue: #2446a8;
-  --blue-soft: #e8ecf7;
-  --sage: #647c69;
-  --brown: #92765f;
+  --paper: #f2efe7;
+  --sheet: #fffdf7;
+  --ink: #2b2c2a;
+  --muted: #6f716c;
+  --faint: #9b9c95;
+  --line: #dcd8cd;
+  --rule: #e7e2d6;
+  --blue: #22409a;
+  --blue-soft: #e6ebf6;
+  --sage: #5d7461;
+  --clay: #8a6a4f;
+
+  /* 正文与标题用霞鹜文楷，界面控件保持无衬线：纸面与操作区分开。 */
+  --serif: "LXGW WenKai", "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --sans: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --mono: "Cascadia Mono", "Consolas", monospace;
+
+  /* 两级圆角：纸面容器 2px，控件 3px。 */
+  --radius-sheet: 2px;
+  --radius-control: 3px;
 }
 
 * {
@@ -69,7 +88,7 @@ button:focus-visible {
   flex: 0 0 38px;
   place-items: center;
   border: 1px solid #cfd4e4;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: var(--blue);
   background: #f0f2f8;
 }
@@ -82,7 +101,7 @@ button:focus-visible {
 }
 
 .brand-name {
-  font-family: Georgia, "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 20px;
   line-height: 1.2;
 }
@@ -118,7 +137,7 @@ button:focus-visible {
   gap: 11px;
   padding: 0 11px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: #656765;
   background: transparent;
   cursor: pointer;
@@ -158,7 +177,7 @@ button:focus-visible {
 .sidebar-footnote {
   margin: 24px 10px 0;
   color: #92938d;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 11px;
 }
 
@@ -176,34 +195,27 @@ button:focus-visible {
 
 .page-header {
   display: flex;
-  min-height: 174px;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 24px;
+  padding: 46px 0 18px;
   border-bottom: 1px solid var(--line);
-}
-
-.eyebrow {
-  margin: 0 0 10px;
-  color: var(--brown);
-  font-family: Georgia, serif;
-  font-size: 11px;
 }
 
 .page-header h1 {
   margin: 0;
   color: var(--ink);
-  font-family: "Songti SC", "SimSun", serif;
-  font-size: 34px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
 .date-stamp {
-  padding: 7px 0;
-  color: #71736f;
-  font-family: "Songti SC", "SimSun", serif;
-  font-size: 14px;
+  color: #8a8c86;
+  font-size: 12px;
+  letter-spacing: 0.2px;
   white-space: nowrap;
 }
 
@@ -215,22 +227,18 @@ button:focus-visible {
   margin-top: 30px;
   padding: 23px 29px 18px;
   border: 1px solid #e3dfd5;
+  border-radius: var(--radius-sheet);
   background: var(--sheet);
   box-shadow: 0 5px 17px rgb(48 43 35 / 4%);
 }
 
-.sheet-topline,
 .sheet-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: #9b9a92;
-  font-family: Georgia, "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 10px;
-}
-
-.sheet-index {
-  color: #a8a49a;
 }
 
 .empty-page {
@@ -257,7 +265,7 @@ button:focus-visible {
 .empty-page h2 {
   margin: 21px 0 8px;
   color: #464844;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 19px;
   font-weight: 500;
 }
@@ -271,6 +279,9 @@ button:focus-visible {
 .sheet-footer {
   min-height: 26px;
   gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
 }
 
 .sheet-footer-line {
@@ -292,9 +303,34 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   color: var(--muted);
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 15px;
   text-align: center;
+}
+
+.empty-block {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.empty-lead {
+  margin: 0;
+}
+
+.text-action {
+  padding: 0;
+  border: 0;
+  color: var(--blue);
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.text-action:hover {
+  color: #16296b;
 }
 
 .journal-layout {
@@ -326,7 +362,7 @@ button:focus-visible {
   height: 26px;
   place-items: center;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: #6d6f6b;
   background: #fbfaf6;
   cursor: pointer;
@@ -353,7 +389,7 @@ button:focus-visible {
   gap: 3px;
   padding: 9px 11px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: #565854;
   background: transparent;
   cursor: pointer;
@@ -369,7 +405,7 @@ button:focus-visible {
   width: 34px;
   height: 34px;
   grid-row: span 2;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   object-fit: cover;
 }
 
@@ -384,7 +420,7 @@ button:focus-visible {
 
 .entry-time {
   color: var(--faint);
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 11px;
 }
 
@@ -411,15 +447,14 @@ button:focus-visible {
   display: flex;
   flex: 1;
   flex-direction: column;
-  margin: 14px 0 10px;
+  margin: 8px 0 10px;
 }
 
 .editor-toolbar {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding-bottom: 9px;
-  border-bottom: 1px solid #ebe7dd;
+  padding: 2px 0 4px;
 }
 
 .editor-tool {
@@ -428,7 +463,7 @@ button:focus-visible {
   height: 26px;
   place-items: center;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   color: #8b8c86;
   background: transparent;
   cursor: pointer;
@@ -470,7 +505,7 @@ button:focus-visible {
   min-width: 0;
   padding: 5px 9px;
   border: 1px solid #ddd9cd;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   color: var(--ink);
   background: #fbfaf6;
   font-size: 12px;
@@ -483,12 +518,12 @@ button:focus-visible {
 
 .entry-title {
   width: 100%;
-  padding: 14px 0 10px;
+  padding: 2px 0 14px;
   border: 0;
   border-bottom: 1px solid #ece8dd;
   color: var(--ink);
   background: transparent;
-  font-family: Georgia, "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 22px;
   letter-spacing: 0.3px;
   outline: none;
@@ -503,11 +538,13 @@ button:focus-visible {
 }
 
 .entry-editor {
+  width: 100%;
+  max-width: 62ch;
   flex: 1;
   min-height: 360px;
-  padding: 18px 0 0;
+  padding: 6px 0 0;
   color: var(--ink);
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 16px;
   line-height: 1.9;
   outline: none;
@@ -554,7 +591,7 @@ button:focus-visible {
   max-width: 100%;
   height: auto;
   margin: 16px 0;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
 }
 
 .entry-editor img.ProseMirror-selectednode {
@@ -563,7 +600,9 @@ button:focus-visible {
 }
 
 .tag-bar {
-  margin-bottom: 14px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
 }
 
 .tag-chips {
@@ -579,7 +618,7 @@ button:focus-visible {
   gap: 4px;
   padding: 2px 4px 2px 8px;
   border: 1px solid #dbe0e9;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   color: #5b6478;
   background: #f3f5fa;
   font-size: 11px;
@@ -644,7 +683,7 @@ button:focus-visible {
 
 .trash-date {
   color: #4a4c48;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 13px;
 }
 
@@ -662,10 +701,42 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.trash-restore {
+.trash-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.trash-actions .link-button {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.trash-actions .link-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.link-button.is-danger {
+  color: #9c3b26;
+}
+
+.link-button.is-danger:hover {
+  color: #7d2c1b;
+}
+
+.link-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.link-button.is-danger {
+  color: #9c3b26;
+}
+
+.link-button.is-danger:hover {
+  color: #7d2c1b;
 }
 
 .editor-error {
@@ -686,7 +757,7 @@ button:focus-visible {
   margin-top: 22px;
   padding: 8px 20px;
   border: 1px solid #cfd4e4;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: var(--blue);
   background: #f0f2f8;
   cursor: pointer;
@@ -698,12 +769,13 @@ button:focus-visible {
 }
 
 .save-status {
-  color: #9b9a92;
+  color: var(--faint);
+  font-size: 11px;
 }
 
 .save-status.is-dirty,
 .save-status.is-saving {
-  color: var(--brown);
+  color: var(--clay);
 }
 
 .save-status.is-failed {
@@ -724,23 +796,34 @@ button:focus-visible {
   margin: 16px 0 0;
   padding: 10px 14px;
   border: 1px solid #e3c9c1;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: #8d3b28;
   background: #fbf1ee;
   font-size: 12px;
 }
 
 .settings-panel {
-  margin-top: 30px;
-  padding: 26px 29px;
-  border: 1px solid #e3dfd5;
-  background: var(--sheet);
+  padding: 26px 0 28px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.settings-panel h2,
+.settings-panel .settings-hint,
+.settings-panel .settings-facts,
+.settings-panel .settings-actions,
+.settings-panel .page-error {
+  max-width: 760px;
+}
+
+.settings-panel:last-of-type {
+  border-bottom: 0;
 }
 
 .settings-panel h2 {
   margin: 0;
-  font-family: "Songti SC", "SimSun", serif;
-  font-size: 17px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -769,9 +852,14 @@ button:focus-visible {
 .settings-facts dd {
   margin: 0;
   color: #454743;
-  font-family: "Consolas", monospace;
+  font-family: var(--mono);
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.settings-panel .page-error,
+.settings-panel .settings-hint[role="status"] {
+  max-width: 62ch;
 }
 
 .settings-panel .primary-button {
@@ -799,6 +887,62 @@ button:focus-visible {
 
 .settings-actions .primary-button {
   margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.export-picker {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.export-picker-list {
+  max-height: 280px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.export-picker-item {
+  display: grid;
+  grid-template-columns: auto 92px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 2px;
+  border-bottom: 1px solid #f0ece1;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.export-picker-item:hover {
+  background: #f8f6ef;
+}
+
+.export-picker-item input {
+  margin: 0;
+}
+
+.export-picker-date {
+  color: var(--faint);
+  font-family: var(--serif);
+  font-size: 11px;
+}
+
+.export-picker-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .visually-hidden {
@@ -924,22 +1068,22 @@ button:focus-visible {
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  padding: 26px 0 10px;
+  gap: 30px;
+  padding: 30px 0 10px;
 }
 
 .timeline-day {
   display: grid;
-  grid-template-columns: 168px minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 26px;
   align-items: start;
 }
 
 .timeline-date {
   margin: 0;
   padding-top: 9px;
-  color: var(--brown);
-  font-family: "Songti SC", "SimSun", serif;
+  color: var(--clay);
+  font-family: var(--serif);
   font-size: 14px;
   font-weight: 500;
   text-align: right;
@@ -959,11 +1103,11 @@ button:focus-visible {
   width: 100%;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 14px;
+  padding: 10px 14px;
   border: 1px solid transparent;
   border-left: 0;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
   color: #565854;
   background: transparent;
   cursor: pointer;
@@ -977,7 +1121,7 @@ button:focus-visible {
 .timeline-cover {
   width: 40px;
   height: 40px;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   object-fit: cover;
 }
 
@@ -998,7 +1142,7 @@ button:focus-visible {
 
 .timeline-time {
   color: var(--faint);
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 11px;
 }
 
@@ -1021,13 +1165,13 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  max-width: 620px;
+  max-width: 760px;
 }
 
 .calendar-month {
   margin: 0;
   color: var(--ink);
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 17px;
   font-weight: 500;
 }
@@ -1035,13 +1179,13 @@ button:focus-visible {
 .calendar-weekdays,
 .calendar-grid {
   display: grid;
-  max-width: 620px;
+  max-width: 760px;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
 .calendar-weekdays {
-  margin: 14px 0 6px;
+  margin: 16px 0 8px;
   color: var(--faint);
   font-size: 11px;
   text-align: center;
@@ -1050,18 +1194,19 @@ button:focus-visible {
 .calendar-cell {
   position: relative;
   display: flex;
-  min-height: 72px;
+  aspect-ratio: 1.35;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 2px;
-  padding: 7px 8px;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 9px 10px;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: #6f716c;
   background: #fbfaf6;
   cursor: pointer;
+  text-align: left;
 }
 
 .calendar-cell:hover {
@@ -1075,12 +1220,17 @@ button:focus-visible {
 }
 
 .calendar-cell.has-entries {
-  border-color: #d9d3c2;
-  background: #f6f3ea;
+  border-color: #d5cdb8;
+  background: #f7f3e8;
 }
 
 .calendar-cell.is-today {
-  box-shadow: inset 0 0 0 1px var(--blue);
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.calendar-cell.is-today .calendar-day {
+  color: var(--blue);
 }
 
 .calendar-cover {
@@ -1094,8 +1244,9 @@ button:focus-visible {
 
 .calendar-day {
   position: relative;
-  font-family: Georgia, serif;
-  font-size: 12px;
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1;
 }
 
 .calendar-cell.has-entries .calendar-day {
@@ -1104,12 +1255,9 @@ button:focus-visible {
 
 .calendar-count {
   position: relative;
-  padding: 1px 5px;
-  border-radius: 999px;
-  color: var(--brown);
-  background: rgb(146 118 95 / 10%);
+  color: var(--clay);
   font-size: 10px;
-  line-height: 1.4;
+  line-height: 1;
 }
 
 @media (max-width: 560px) {
@@ -1131,7 +1279,7 @@ button:focus-visible {
   flex-direction: column;
   gap: 10px;
   margin-bottom: 18px;
-  max-width: 620px;
+  max-width: 760px;
 }
 
 .search-field {
@@ -1140,7 +1288,7 @@ button:focus-visible {
   gap: 8px;
   padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: var(--faint);
   background: var(--sheet);
 }
@@ -1180,7 +1328,7 @@ button:focus-visible {
 .search-date input {
   padding: 4px 6px;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   background: var(--sheet);
   color: var(--ink);
   font-family: inherit;
@@ -1222,7 +1370,7 @@ button:focus-visible {
 .search-results {
   display: flex;
   flex-direction: column;
-  max-width: 620px;
+  max-width: 760px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1230,7 +1378,7 @@ button:focus-visible {
 
 .search-result {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr) 40px;
+  grid-template-columns: 118px minmax(0, 1fr) auto 40px;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -1249,7 +1397,7 @@ button:focus-visible {
 
 .search-result-date {
   color: var(--muted);
-  font-family: Songti, serif;
+  font-family: var(--serif);
   font-size: 12px;
 }
 
@@ -1261,9 +1409,6 @@ button:focus-visible {
 }
 
 .search-result-title {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
   min-width: 0;
   overflow: hidden;
   color: var(--ink);
@@ -1281,25 +1426,26 @@ button:focus-visible {
 }
 
 .search-result-time {
-  flex: none;
   color: var(--faint);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .search-cover {
   width: 40px;
   height: 40px;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   object-fit: cover;
 }
 
 @media (max-width: 560px) {
   .search-result {
-    grid-template-columns: minmax(0, 1fr) 40px;
+    grid-template-columns: minmax(0, 1fr) auto 40px;
   }
 
   .search-result-date {
-    grid-column: 1 / -1;
+    display: none;
   }
 }
 
@@ -1326,6 +1472,13 @@ button:focus-visible {
   align-content: start;
 }
 
+.letter-empty {
+  padding: 10px 9px;
+  color: var(--faint);
+  font-size: 12px;
+  list-style: none;
+}
+
 .letter-item {
   display: grid;
   width: 100%;
@@ -1333,7 +1486,7 @@ button:focus-visible {
   gap: 3px 6px;
   padding: 10px 9px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: inherit;
   background: transparent;
   cursor: pointer;
@@ -1357,7 +1510,7 @@ button:focus-visible {
   place-items: center;
   border: 1px solid #ddd9cd;
   border-radius: 50%;
-  color: var(--brown);
+  color: var(--clay);
   background: #faf7f0;
 }
 
@@ -1370,7 +1523,7 @@ button:focus-visible {
 .letter-heading {
   overflow: hidden;
   color: #3c3e3b;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1392,18 +1545,25 @@ button:focus-visible {
   flex-direction: column;
   padding: 22px 28px 18px;
   border: 1px solid #e3dfd5;
+  border-radius: var(--radius-sheet);
   background: var(--sheet);
   box-shadow: 0 5px 17px rgb(48 43 35 / 4%);
 }
 
+.letter-meta {
+  margin: 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
 .letter-title-input {
   width: 100%;
-  margin-top: 22px;
+  margin-top: 14px;
   padding: 0;
   border: 0;
   color: var(--ink);
   background: transparent;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 21px;
 }
 
@@ -1419,6 +1579,7 @@ button:focus-visible {
 
 .letter-input {
   width: 100%;
+  max-width: 62ch;
   min-height: 220px;
   flex: 1;
   margin-top: 14px;
@@ -1426,7 +1587,7 @@ button:focus-visible {
   border: 0;
   color: #3c3e3b;
   background: transparent;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 15px;
   line-height: 1.9;
   resize: none;
@@ -1453,7 +1614,7 @@ button:focus-visible {
 .letter-date {
   padding: 4px 6px;
   border: 1px solid #e2dfd4;
-  border-radius: 3px;
+  border-radius: var(--radius-control);
   color: #4a4c48;
   background: #fcfbf7;
   font-family: inherit;
@@ -1468,16 +1629,17 @@ button:focus-visible {
 .letter-title {
   margin: 20px 0 0;
   color: var(--ink);
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 21px;
   font-weight: 500;
 }
 
 .letter-body {
+  max-width: 62ch;
   flex: 1;
   margin: 14px 0 0;
   color: #3c3e3b;
-  font-family: "Songti SC", "SimSun", serif;
+  font-family: var(--serif);
   font-size: 15px;
   line-height: 1.9;
   white-space: pre-wrap;
@@ -1501,7 +1663,7 @@ button:focus-visible {
   min-height: 92px;
   padding: 10px 12px;
   border: 1px solid #e3dfd5;
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   color: #3c3e3b;
   background: #fcfbf7;
   font-family: inherit;
@@ -1516,6 +1678,12 @@ button:focus-visible {
 
 .letter-sheet .sheet-footer {
   margin-top: 18px;
+}
+
+.letter-sheet .letter-save {
+  margin-top: 0;
+  padding: 7px 18px;
+  font-size: 12px;
 }
 
 .letter-sheet .link-button {

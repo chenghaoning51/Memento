@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { open, ask } from "@tauri-apps/plugin-dialog";
-import { Download, HardDriveDownload, History } from "lucide-react";
+import { Download, FolderCog, HardDriveDownload, History } from "lucide-react";
 import { createBackup, inspectBackup, restoreBackup, type BackupInfo, type BackupSummary, type RestoreSummary } from "../../lib/backupApi";
 import { exportEntries, type ExportSummary } from "../../lib/exportApi";
-import { libraryInfo } from "../../lib/entryApi";
-import type { LibraryInfo } from "../../types/entry";
+import { listTimeline, libraryInfo } from "../../lib/entryApi";
+import { relocateLibrary, resetLibraryLocation } from "../../lib/locationApi";
+import type { EntrySummary, LibraryInfo } from "../../types/entry";
 import { errorText } from "../../lib/errorText";
 
 function formatBytes(bytes: number): string {
@@ -19,7 +20,13 @@ export function SettingsPage() {
   const [exported, setExported] = useState<ExportSummary | null>(null);
   const [backedUp, setBackedUp] = useState<BackupSummary | null>(null);
   const [restored, setRestored] = useState<RestoreSummary | null>(null);
-  const [busy, setBusy] = useState<"" | "export" | "backup" | "restore">("");
+  const [busy, setBusy] = useState<"" | "export" | "backup" | "restore" | "relocate">("");
+  const [relocated, setRelocated] = useState<string | null>(null);
+
+  // 导出范围：默认全部；选过之后只导出勾中的那些。
+  const [picking, setPicking] = useState(false);
+  const [candidates, setCandidates] = useState<EntrySummary[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     libraryInfo()
@@ -27,13 +34,42 @@ export function SettingsPage() {
       .catch((cause: unknown) => setError(errorText(cause)));
   }, []);
 
+  const togglePicking = async () => {
+    if (picking) {
+      setPicking(false);
+      return;
+    }
+    try {
+      setCandidates(await listTimeline(200, 0));
+      setSelected(new Set());
+      setPicking(true);
+      setError(null);
+    } catch (cause) {
+      setError(errorText(cause));
+    }
+  };
+
+  const toggleEntry = (id: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const startExport = async () => {
+    const ids = picking ? [...selected] : [];
+    if (picking && ids.length === 0) {
+      setError("先勾选要导出的日记，或者取消选择以导出全部。");
+      return;
+    }
     try {
       const directory = await open({ directory: true, title: "选择导出的目录" });
       if (!directory) return;
       setBusy("export");
       setError(null);
-      setExported(await exportEntries(directory));
+      setExported(await exportEntries(directory, ids));
     } catch (cause) {
       setError(errorText(cause));
     } finally {
@@ -77,11 +113,49 @@ export function SettingsPage() {
     }
   };
 
+  // 换目录会复制整个空间过去；当前连接仍指向旧位置，所以提醒重启。
+  const relocate = async () => {
+    try {
+      const directory = await open({ directory: true, title: "选择新的数据目录" });
+      if (!directory) return;
+      const confirmed = await ask(
+        `把当前空间完整复制到 ${directory}，之后从这个目录读写。复制不会删除原目录，确认继续吗？`,
+        { title: "更换数据目录", kind: "warning", okLabel: "复制过去", cancelLabel: "取消" },
+      );
+      if (!confirmed) return;
+      setBusy("relocate");
+      setError(null);
+      await relocateLibrary(directory);
+      setRelocated(directory);
+    } catch (cause) {
+      setError(errorText(cause));
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const backToDefault = async () => {
+    try {
+      const confirmed = await ask("下次启动时回到默认数据目录。已经复制到别处的文件不会被删除，确定吗？", {
+        title: "恢复默认目录",
+        kind: "info",
+        okLabel: "恢复默认",
+        cancelLabel: "取消",
+      });
+      if (!confirmed) return;
+      await resetLibraryLocation();
+      setRelocated("默认目录（重启后生效）");
+    } catch (cause) {
+      setError(errorText(cause));
+    }
+  };
+
+  const selectedCount = selected.size;
+
   return (
     <section className="section-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
-          <p className="eyebrow">MEMENTO SETTINGS</p>
           <h1 id="page-title">设置</h1>
         </div>
       </header>
@@ -107,17 +181,67 @@ export function SettingsPage() {
         ) : (
           <p className="settings-hint">{error ?? "正在读取…"}</p>
         )}
+        <div className="settings-actions">
+          <button className="primary-button" type="button" onClick={() => void relocate()} disabled={busy !== ""}>
+            <FolderCog size={13} strokeWidth={1.9} aria-hidden="true" />
+            {busy === "relocate" ? "正在复制…" : "更换数据目录"}
+          </button>
+          <button className="link-button" type="button" onClick={() => void backToDefault()} disabled={busy !== ""}>
+            恢复默认目录
+          </button>
+        </div>
+        <p className="settings-hint">
+          更换目录会把当前空间复制过去，重启后从新位置读写；原目录保留不删。
+        </p>
+        {relocated && (
+          <p className="settings-hint" role="status">
+            已切换到 {relocated}，重启应用后生效。
+          </p>
+        )}
       </div>
 
       <div className="settings-panel">
         <h2>导出</h2>
         <p className="settings-hint">
-          把全部日记写成 Markdown 文件，图片复制到同一目录的 images/ 文件夹里。导出后不依赖 Memento 也能打开。
+          把日记写成 Markdown 文件，图片复制到同一目录的 images/ 文件夹里。导出后不依赖 Memento 也能打开。
         </p>
-        <button className="primary-button" type="button" onClick={() => void startExport()} disabled={busy !== ""}>
-          <Download size={13} strokeWidth={1.9} aria-hidden="true" />
-          {busy === "export" ? "正在导出…" : "导出为 Markdown"}
-        </button>
+        <div className="settings-actions">
+          <button className="primary-button" type="button" onClick={() => void startExport()} disabled={busy !== ""}>
+            <Download size={13} strokeWidth={1.9} aria-hidden="true" />
+            {busy === "export" ? "正在导出…" : picking ? `导出选中的 ${selectedCount} 篇` : "导出全部日记"}
+          </button>
+          <button className="link-button" type="button" onClick={() => void togglePicking()} disabled={busy !== ""}>
+            {picking ? "取消选择" : "只导出部分日记"}
+          </button>
+        </div>
+
+        {picking && (
+          <div className="export-picker">
+            {candidates.length === 0 ? (
+              <p className="settings-hint">还没有可以导出的日记。</p>
+            ) : (
+              <ul className="export-picker-list">
+                {candidates.map((entry) => (
+                  <li key={entry.id}>
+                    <label className="export-picker-item">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(entry.id)}
+                        onChange={() => toggleEntry(entry.id)}
+                      />
+                      <span className="export-picker-date">{entry.entryDate}</span>
+                      <span className="export-picker-title">{entry.title || entry.excerpt || "未命名的一页"}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {candidates.length > 0 && (
+              <p className="settings-hint">最近 {candidates.length} 篇；更早的日记请用“导出全部日记”。</p>
+            )}
+          </div>
+        )}
+
         {exported && (
           <p className="settings-hint" role="status">
             已导出 {exported.entryCount} 篇日记、{exported.imageCount} 张图片到 {exported.directory}
@@ -140,6 +264,9 @@ export function SettingsPage() {
             {busy === "restore" ? "正在恢复…" : "从备份恢复"}
           </button>
         </div>
+        <p className="settings-hint">
+          恢复前自动留下的空间备份保存在数据目录的 backups/ 里，只保留最近 5 份，更旧的会自动删除。
+        </p>
         {backedUp && (
           <p className="settings-hint" role="status">
             已备份 {backedUp.fileCount} 个文件（{formatBytes(backedUp.byteSize)}）到 {backedUp.directory}

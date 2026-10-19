@@ -30,10 +30,11 @@ function groupByDate(entries: EntrySummary[]): DayGroup[] {
 
 type TimelinePageProps = {
   onOpenEntry: (entryDate: string, entryId: string) => void;
+  onGoToday: () => void;
 };
 
 /** 时间线：按日期从新到旧翻阅全部日记，滚到底自动续读。 */
-export function TimelinePage({ onOpenEntry }: TimelinePageProps) {
+export function TimelinePage({ onOpenEntry, onGoToday }: TimelinePageProps) {
   const [entries, setEntries] = useState<EntrySummary[] | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -83,15 +84,19 @@ export function TimelinePage({ onOpenEntry }: TimelinePageProps) {
     <section className="timeline-page" aria-labelledby="page-title">
       <header className="page-header">
         <div>
-          <p className="eyebrow">A PRIVATE JOURNAL</p>
           <h1 id="page-title">时间线</h1>
         </div>
-        <span className="date-stamp">{entries && entries.length > 0 ? `已读 ${entries.length} 篇` : "从头读起"}</span>
+        <span className="date-stamp">{entries && entries.length > 0 ? `共 ${entries.length} 篇` : "从头读起"}</span>
       </header>
 
       {entries !== null && entries.length === 0 ? (
         <div className="section-empty">
-          <span>还没有可以翻阅的记录。</span>
+          <div className="empty-block">
+            <p className="empty-lead">还没有可以翻阅的记录。</p>
+            <button className="text-action" type="button" onClick={onGoToday}>
+              去写今天的第一篇
+            </button>
+          </div>
         </div>
       ) : (
         <div className="timeline">

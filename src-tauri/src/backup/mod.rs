@@ -14,6 +14,8 @@ use crate::error::{AppError, AppResult};
 
 /// 备份目录格式版本。
 const FORMAT_VERSION: i64 = 1;
+/// 恢复前自动备份保留的份数：更旧的自动删掉，避免磁盘无限增长。
+const AUTO_BACKUPS_TO_KEEP: usize = 5;
 const MANIFEST_FILE: &str = "manifest.json";
 const DATABASE_FILE: &str = "memento.db";
 const ATTACHMENT_DIR: &str = "attachments";
@@ -110,6 +112,41 @@ pub fn create(
         file_count,
         byte_size,
     })
+}
+
+/// 只保留最新的若干份自动备份，返回删掉的目录。
+///
+/// 只处理 `backups/` 下名字符合 `memento-backup-<14 位时间戳>` 的目录，
+/// 用户自己选的备份位置不会被碰。
+pub fn prune_auto_backups(backups_dir: &Path, keep: usize) -> AppResult<Vec<String>> {
+    if !backups_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut candidates: Vec<(String, PathBuf)> = Vec::new();
+    for entry in std::fs::read_dir(backups_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if let Some(stamp) = name.strip_prefix("memento-backup-") {
+            if stamp.len() == 14 && stamp.chars().all(|character| character.is_ascii_digit()) {
+                candidates.push((name, path));
+            }
+        }
+    }
+
+    // 名字里的时间戳可排序，按名字倒序就是新的在前。
+    candidates.sort_by(|left, right| right.0.cmp(&left.0));
+
+    let mut removed = Vec::new();
+    for (_, path) in candidates.into_iter().skip(keep) {
+        std::fs::remove_dir_all(&path)?;
+        removed.push(path.display().to_string());
+    }
+    Ok(removed)
 }
 
 /// 读取并校验备份目录：manifest 版本、文件清单与校验值都要对得上。
@@ -243,7 +280,10 @@ pub fn restore(
     app_version: &str,
 ) -> AppResult<RestoreSummary> {
     let info = inspect(directory)?;
-    let previous = create(connection, root, &root.join("backups"), now_utc, app_version)?;
+    let backups_dir = root.join("backups");
+    let previous = create(connection, root, &backups_dir, now_utc, app_version)?;
+    // 恢复前备份是自动产物，只保留最近几份。
+    prune_auto_backups(&backups_dir, AUTO_BACKUPS_TO_KEEP)?;
 
     let staging = root.join(".restore");
     std::fs::remove_dir_all(&staging).ok();

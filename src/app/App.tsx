@@ -68,7 +68,10 @@ export default function App() {
         />
       )}
       {page === "timeline" && (
-        <TimelinePage onOpenEntry={(entryDate, entryId) => openJournal("timeline", entryDate, entryId)} />
+        <TimelinePage
+          onOpenEntry={(entryDate, entryId) => openJournal("timeline", entryDate, entryId)}
+          onGoToday={() => navigate("today")}
+        />
       )}
       {page === "calendar" && <CalendarPage onOpenDate={(entryDate) => openJournal("calendar", entryDate)} />}
       {page === "search" && (
