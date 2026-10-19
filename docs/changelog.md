@@ -103,6 +103,13 @@
 - 新增依赖 `tauri-plugin-dialog` 与 `@tauri-apps/plugin-dialog`，capability 增加 `dialog:default`；新增 `export` 模块与 `export_entries` 命令，命令总数变为二十五个。取舍见 [ADR-0009](decisions/0009-markdown-export.md)。
 - 新增 Rust 用例覆盖 Markdown 降级与重名不覆盖，`cargo test` 现为 12 个用例；A16 桌面验收记录见[迭代 008](development/iterations.md#迭代-008)。
 
+## 2026-10-19 自选数据目录、选择性导出与备份自动清理
+
+- 设置页可以更换数据目录：把数据库、附件、缩略图与自动备份完整复制到新位置，记在应用配置目录的 `library.json`，重启后从新目录读写；原目录保留不删，也可一键恢复默认。目标目录必须为空。
+- 导出支持只导出选中的日记：设置页勾选最近若干篇，未选择时仍导出全部；命令 `export_entries` 新增 `entryIds` 参数，空数组表示全部。
+- 恢复前自动备份只保留最近 5 份，更旧的自动删除；只处理 `backups/` 下符合命名规则的目录，用户自己选的备份位置不受影响。
+- 新增命令 `relocate_library` 与 `reset_library_location`，命令总数为 30 个；新增 Rust 用例覆盖选择性导出与自动备份清理，`cargo test` 现为 16 个用例。
+
 ## 2026-10-19 标题功能与文档整理
 
 - 补齐 MVP 范围里遗漏的日记标题：正文上方新增单行标题输入，占位“无题”，与正文共用 800 ms 自动保存；标题参与搜索并决定导出文件名。

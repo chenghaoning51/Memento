@@ -25,6 +25,7 @@ M0–M6 全部完成，P0 发布门槛已满足，Windows 安装包 `Memento_1.0
 - 安装验证只覆盖同一台机器的覆盖安装，干净机器首次安装与其它 Windows 版本未验证。
 - 主 JS 包约 690 kB，构建有 chunk 体积警告；桌面本地加载下无可感知影响。
 - 恢复期间不禁止界面操作，极端并发没有互斥。
+- 更换数据目录采用复制而不是移动：大空间会临时占用两份磁盘；旧目录需用户自行清理。
 
 ## 优先级
 
@@ -51,10 +52,10 @@ React 页面与编辑状态
 | 前端入口 | `src/main.tsx` | 只挂载 React 与全局样式 |
 | 应用壳 | `src/app/App.tsx`、`AppShell.tsx`、`navigation.ts` | 组件状态切页、切页守卫、来源返回；“收藏册”是占位页 |
 | 功能页面 | `src/features/{journal,timeline,calendar,search,letters,trash,settings}` | 全部接真实数据 |
-| 应用服务 | `src/lib/*Api.ts`、`entryContent.ts`、`letterContent.ts`、`localDate.ts`、`unlockTime.ts`、`errorText.ts` | UI 不碰 SQL 与文件路径 |
+| 应用服务 | `src/lib/*Api.ts`、`entryContent.ts`、`letterContent.ts`、`localDate.ts`、`unlockTime.ts`、`errorText.ts`、`locationApi.ts` | UI 不碰 SQL 与文件路径 |
 | 编辑与保存 | `features/journal/useAutosave.ts`、`EntryEditor.tsx`、`TagBar.tsx` | 800 ms 空闲保存、5 秒强制保存、串行写入、失败重试、切页与关闭前 flush |
 | 桌面入口 | `src-tauri/src/lib.rs` | 打开 Library、注册 28 个命令、dialog 插件与 `attachment` 协议 |
-| Rust 模块 | `db/`、`entries/`、`attachments/`、`tags/`、`letters/`、`export/`、`backup/`、`commands.rs`、`error.rs` | 迁移 v1–v5、仓储、正文转 Markdown、备份与恢复 |
+| Rust 模块 | `db/`、`entries/`、`attachments/`、`tags/`、`letters/`、`export/`、`backup/`、`location.rs`、`commands.rs`、`error.rs` | 迁移 v1–v5、仓储、正文转 Markdown、备份与恢复、数据目录切换 |
 | 权限与打包 | `src-tauri/capabilities/default.json`、`tauri.conf.json` | `core:default`、窗口关闭、`dialog:default`；CSP 只放行自身资源与附件图片；NSIS 目标 |
 
 前端依赖：React 19、TypeScript 6、Vite 8、Tauri API 2、dialog 插件 2.8、Lucide、Tiptap 3.32。
@@ -68,7 +69,6 @@ Rust 依赖：Tauri 2、Serde、rusqlite（bundled）、time、uuid、sha2、ima
 | 收藏册的数据模型 | 进入 P1 前 | ADR；复用已有附件与标签能力 |
 | 应用锁与加密方案 | 进入 P1 前 | ADR；明确威胁模型，不把本地保存说成加密 |
 | 前端测试工具与 CI | 下次功能开发前 | ADR + 命令文档 |
-| 用户自选 Library 目录 | 需要多空间时 | ADR；涉及迁移与切换 |
 
 ## 主要风险
 

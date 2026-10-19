@@ -16,7 +16,8 @@ M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一�
 - 未来信件把开启时刻存成 UTC（`unlock_at_utc`）并另存写信时区（`unlock_timezone`）；三态在每次读取时按当前 UTC 推进，不依赖后台定时器；到期后原信冻结，回应独立写 `reply_json` / `reply_text`（见 [ADR-0008](../decisions/0008-letters-unlock-time.md)）。
 - 导出把正文按节点映射成 Markdown、图片复制到目标目录的 images/ 并用相对路径引用；文件名是「日期-标题」，重名追加序号（见 [ADR-0009](../decisions/0009-markdown-export.md)）。导出由 Rust 完成，目录选择交给 dialog 插件，前端只传路径字符串。
 - 备份是一个目录：`VACUUM INTO` 生成数据库快照，复制 `attachments/` 与 `thumbnails/`，最后写带 SHA-256 清单的 `manifest.json`。恢复先预检、再自动备份当前空间，然后把快照挂上来在一条事务里换掉五张表，附件目录在事务成功后替换（见 [ADR-0010](../decisions/0010-backup-format.md)）。
-- “设置”页显示数据目录、数据库文件路径与模式版本，并提供 Markdown 导出、备份与恢复入口。
+- “设置”页显示数据目录、数据库文件路径与模式版本，并提供更换数据目录、Markdown 导出（全部或勾选）、备份与恢复入口。
+- 数据目录可配置：选择记在应用配置目录的 `library.json`，启动时先读它再打开 Library；更换目录通过复制整个空间完成，不移动也不删除原目录。
 
 发布边界：CSP 只放行自身资源、`ipc` 与 `http://attachment.localhost` 的图片，内联脚本、远程脚本/样式/图片与对附件协议的 `fetch` 都被拦下；打包目标为 Windows NSIS，版本 1.0.0。前端错误统一经 `src/lib/errorText.ts` 转成一句话，UI 不直接展示 `Error:` 前缀。
 
