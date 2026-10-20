@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { SaveStatus } from "../../types/entry";
 
 /** 停止输入 800ms 后保存；连续输入时最多每 5 秒强制保存一次。 */
@@ -103,17 +102,6 @@ export function useAutosave({ entryId, save }: AutosaveOptions): AutosaveControl
     savingRef.current = null;
     setStatus("saved");
   }, [entryId]);
-
-  // 关闭窗口前先落盘；失败则取消关闭，保留未保存的输入（A05）。
-  useEffect(() => {
-    const unlisten = getCurrentWindow().onCloseRequested(async (event) => {
-      if (await flush()) return;
-      event.preventDefault();
-    });
-    return () => {
-      void unlisten.then((dispose) => dispose());
-    };
-  }, [flush]);
 
   useEffect(() => clearTimer, []);
 

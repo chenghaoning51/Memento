@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { AppShell } from "./AppShell";
 import type { AppPage } from "./navigation";
+import { useDesktopLifecycle } from "./useDesktopLifecycle";
 import { CalendarPage } from "../features/calendar/CalendarPage";
 import { JournalPage } from "../features/journal/JournalPage";
 import { LettersPage } from "../features/letters/LettersPage";
@@ -56,6 +57,9 @@ export default function App() {
   const registerLeaveGuard = useCallback((guard: (() => Promise<boolean>) | null) => {
     leaveGuardRef.current = guard;
   }, []);
+
+  // 叉号收进托盘、托盘「退出」才结束进程；两者都先走页面注册的落盘守卫。
+  useDesktopLifecycle(leaveGuardRef);
 
   return (
     <AppShell activePage={target?.back ?? page} onNavigate={navigate}>

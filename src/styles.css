@@ -1314,25 +1314,106 @@ button:focus-visible {
 
 .search-dates {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
 }
 
-.search-date {
-  display: flex;
+/* ---------- 日期字段 ---------- */
+
+.date-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.date-field-label {
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.date-field-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.date-field-chip {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 9px 4px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: transparent;
   color: var(--faint);
+  font-family: var(--serif);
   font-size: 12px;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
-.search-date input {
-  padding: 4px 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-control);
-  background: var(--sheet);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 12px;
+.date-field-chip:hover {
+  border-color: #b9c2da;
+  color: var(--blue);
+  background: #f6f7fb;
+}
+
+.date-field-chip.is-set {
+  border-style: solid;
+  border-color: #d8d2c2;
+  color: #565854;
+  background: #fbfaf5;
+}
+
+.date-field-chip.is-set:hover {
+  border-color: #b9c2da;
+  color: var(--blue);
+  background: #f0f2f8;
+}
+
+.date-field-chip:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.date-field-text {
+  line-height: 1.5;
+}
+
+.date-field-clear {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #a8a69d;
+  cursor: pointer;
+}
+
+.date-field-clear:hover {
+  background: #eceae2;
+  color: #7c7a72;
+}
+
+/* 原生输入只用来唤起系统日历，视觉与焦点都交给按钮。 */
+.date-field-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .search-tags {
@@ -1604,21 +1685,6 @@ button:focus-visible {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid #eeece4;
-}
-
-.letter-unlock-label {
-  color: var(--faint);
-  font-size: 11px;
-}
-
-.letter-date {
-  padding: 4px 6px;
-  border: 1px solid #e2dfd4;
-  border-radius: var(--radius-control);
-  color: #4a4c48;
-  background: #fcfbf7;
-  font-family: inherit;
-  font-size: 12px;
 }
 
 .letter-unlock-hint {

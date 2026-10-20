@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Lock, MailOpen, Trash2 } from "lucide-react";
+import { DateField } from "../../components/DateField";
 import { buildLetterContent } from "../../lib/letterContent";
 import {
   createLetter,
@@ -242,16 +243,12 @@ export function LettersPage() {
                 aria-label="信件正文"
               />
               <div className="letter-unlock">
-                <label className="letter-unlock-label" htmlFor="unlock-date">
-                  开启日期
-                </label>
-                <input
-                  id="unlock-date"
-                  className="letter-date"
-                  type="date"
+                <DateField
+                  label="开启日期"
                   value={unlockDate}
                   min={toLocalDateString(new Date())}
-                  onChange={(event) => setUnlockDate(event.target.value)}
+                  clearable={false}
+                  onChange={setUnlockDate}
                 />
                 <span className="letter-unlock-hint">当天 00:00 之后可以打开</span>
               </div>

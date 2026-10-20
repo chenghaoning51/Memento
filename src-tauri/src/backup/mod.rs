@@ -179,16 +179,17 @@ fn read_manifest(directory: &Path) -> AppResult<Manifest> {
     let path = directory.join(MANIFEST_FILE);
     if !path.exists() {
         return Err(AppError::InvalidBackup(
-            "这个目录里没有 manifest.json，不是 Memento 的备份。".to_string(),
+            "这个文件夹不是 Memento 的备份，换一个试试。".to_string(),
         ));
     }
-    let manifest: Manifest = serde_json::from_slice(&std::fs::read(&path)?)
-        .map_err(|error| AppError::InvalidBackup(format!("manifest.json 读不出来：{error}")))?;
+    let manifest: Manifest = serde_json::from_slice(&std::fs::read(&path)?).map_err(|error| {
+        eprintln!("读取备份说明失败：{error}");
+        AppError::InvalidBackup("这份备份的说明文件读不出来，可能已经损坏。".to_string())
+    })?;
     if manifest.format > FORMAT_VERSION {
-        return Err(AppError::InvalidBackup(format!(
-            "这份备份的格式版本 {} 比当前 Memento 支持的新，请升级后再恢复。",
-            manifest.format
-        )));
+        return Err(AppError::InvalidBackup(
+            "这份备份来自更新版本的 Memento，请先升级再恢复。".to_string(),
+        ));
     }
     Ok(manifest)
 }
@@ -198,11 +199,17 @@ fn verify_files(directory: &Path, manifest: &Manifest) -> AppResult<()> {
     for file in &manifest.files {
         let path = directory.join(&file.path);
         if !path.exists() {
-            return Err(AppError::InvalidBackup(format!("备份里缺少 {}。", file.path)));
+            eprintln!("备份缺少文件：{}", file.path);
+            return Err(AppError::InvalidBackup(
+                "这份备份不完整，有文件缺失，恢复后可能看不到全部内容。换一份备份试试。".to_string(),
+            ));
         }
         let bytes = std::fs::read(&path)?;
         if bytes.len() as u64 != file.size || sha256_hex(&bytes) != file.sha256 {
-            return Err(AppError::InvalidBackup(format!("{} 校验不通过。", file.path)));
+            eprintln!("备份文件校验不通过：{}", file.path);
+            return Err(AppError::InvalidBackup(
+                "这份备份里的文件被人改动过或已经损坏，为了安全没有恢复。".to_string(),
+            ));
         }
     }
     Ok(())

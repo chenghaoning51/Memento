@@ -9,6 +9,7 @@ mod letters;
 mod library;
 mod location;
 mod tags;
+mod tray;
 
 #[cfg(test)]
 mod tests;
@@ -44,10 +45,12 @@ pub fn run() {
                 config_dir,
                 default_root: app_data_dir.join(LIBRARY_DIR),
             });
+            tray::setup(app.handle())?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::library_info,
+            commands::quit_app,
             commands::relocate_library,
             commands::reset_library_location,
             commands::list_entries,

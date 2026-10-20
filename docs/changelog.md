@@ -136,3 +136,23 @@
 - 恢复会自动把当前空间备份到数据目录的 `backups/`，再在一条事务里换掉 `entries`、`attachments`、`tags`、`entry_tags`、`letters` 五张表；事务失败就回滚，当前空间一行都不变，附件与缩略图在事务成功后才替换。
 - 新增 `AppError::InvalidBackup` 与 `backup` 模块；新增三个 Tauri 命令 `create_backup`、`inspect_backup`、`restore_backup`，命令总数变为二十八个。取舍见 [ADR-0010](decisions/0010-backup-format.md)。
 - 新增 Rust 用例覆盖整空间备份恢复与拒绝损坏或缺文件的备份，`cargo test` 现为 13 个用例；A17–A19 桌面验收记录见[迭代 009](development/iterations.md#迭代-009)。
+
+## 2026-10-20 日期显示与窗口常驻托盘
+
+- 日期字段不再直接显示原生 `<input type="date">` 的 `yyyy/mm/日` 占位：新增 `src/components/DateField.tsx`，界面上按中文显示（如“2026年10月17日”），点开才出现系统日历；空值显示“不限”，已选日期可单独清除。搜索页的“从/到”与未来信箱的“开启日期”都改用这个字段。
+- 点击窗口叉号改为最小化，进程继续留在系统托盘；托盘左键回到主界面，右键菜单提供「打开主界面」与「退出 Memento」。取舍与实现见 [ADR-0011](decisions/0011-close-to-tray.md)。
+- 关闭的落盘逻辑从 `useAutosave` 移到 `src/app/useDesktopLifecycle.ts`：叉号与托盘退出共用 `App` 里的页面守卫，在非日记页关窗或退出也不会跳过 flush；落盘失败时窗口不最小化、也不退出，仍可重试保存。
+- 新增 `src-tauri/src/tray.rs` 与 Tauri 命令 `quit_app`，命令总数为 33 个；`tauri` 启用 `tray-icon` 特性，托盘图标复用窗口图标。
+- 能力文件 `src-tauri/capabilities/default.json` 补上 `core:window:allow-minimize`、`allow-unminimize`、`allow-show`、`allow-set-focus`，并移除不再使用的 `allow-destroy`。
+- 重新打包 `Memento_1.0.0_x64-setup.exe`（4,212,562 字节，SHA-256 `235DCE3D9E278FA0C73063D2754351CA284E3BB1F7525CC7A52266667070D218`）。体积比上一版大约 1.6 MB，是启用 `tray-icon` 特性带来的；Release 构建已实测叉号最小化与托盘创建。
+
+## 2026-10-20 界面文字改为面向使用者
+
+- 设置页重写：分节标题从「数据位置」改为「存放位置」，去掉数据库文件路径与「数据库模式版本」这类内部字段，改为显示应用版本；说明文字换成「你的日记、图片和备份都放在这个文件夹里」这类日常说法。
+- 备份与恢复说明不再出现 manifest、校验值、快照、`backups/`、`images/` 等实现细节；只说明备份会把内容完整复制一份、恢复前会自动另存当前内容且只留最近 5 份。
+- Rust 错误信息去掉底层原文：数据库与文件错误不再把 SQL 错误和异常类型甩给用户，改成「这次没能保存成功，请再试一次」并提示可以先备份；原始错误改写到控制台。
+- 备份校验失败的提示不再列出缺失或校验不符的具体文件路径，只说「这份备份不完整」或「文件被改动过或已经损坏」，并建议换一份。
+- 日记、信件、图片已不存在的提示不再夹带内部 ID。
+- 恢复确认框里的备份时间改用中文日期时间；设置页导出勾选列表里的日期从 `2026-10-17` 改为「2026年10月17日」。
+- 选择文件夹的系统对话框标题改为「日记导出到哪里」「选择备份文件所在的文件夹」「日记存放到哪个文件夹」。
+- 本轮安装包为 `Memento_1.0.0_x64-setup.exe`（4,213,701 字节，SHA-256 `8AABF75B34BD46A3B914A3FF26B5DF359CD685D512908F3980F8B6946537B6B3`），发布到 GitHub Release `v1.0.0`。

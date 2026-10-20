@@ -34,6 +34,12 @@ pub fn library_info(library: State<'_, Library>) -> AppResult<LibraryInfo> {
     library.info()
 }
 
+/// 真正结束进程。只由托盘「退出」在前端落盘成功后调用；叉号走隐藏，不经过这里。
+#[tauri::command]
+pub fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 /// 把整个空间搬到新目录：复制数据库、附件、缩略图与自动备份，再记下新位置。
 /// 复制完成后需要重启应用，当前连接仍指向旧目录。
 #[tauri::command]
@@ -398,7 +404,7 @@ pub fn attachment_response(
                     .expect("附件响应可以构建")
             })
             .unwrap_or_else(|error| error_response(error.to_string())),
-        Ok(None) => error_response("附件不存在".to_string()),
+        Ok(None) => error_response("这张图片已经不在了。".to_string()),
         Err(error) => error_response(error.to_string()),
     };
     response

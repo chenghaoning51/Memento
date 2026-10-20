@@ -33,3 +33,4 @@
 - [0008：信件的开启时刻存 UTC，状态在读取时推进](0008-letters-unlock-time.md)
 - [0009：导出用 Markdown 文件与相对路径图片](0009-markdown-export.md)
 - [0010：备份是一个目录，恢复在一条事务里换行](0010-backup-format.md)
+- [0011：叉号最小化到托盘，退出由托盘菜单发起](0011-close-to-tray.md)

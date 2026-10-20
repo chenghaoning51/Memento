@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
+import { DateField } from "../../components/DateField";
 import { attachmentSource } from "../../lib/attachmentSource";
 import { listTags, searchEntries } from "../../lib/entryApi";
 import { formatCalendarDate, formatClockTime } from "../../lib/localDate";
@@ -133,14 +134,8 @@ export function SearchPage({ onOpenEntry }: SearchPageProps) {
         </label>
 
         <div className="search-dates">
-          <label className="search-date">
-            <span>从</span>
-            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
-          </label>
-          <label className="search-date">
-            <span>到</span>
-            <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
-          </label>
+          <DateField label="从" value={startDate} onChange={setStartDate} placeholder="不限" />
+          <DateField label="到" value={endDate} onChange={setEndDate} placeholder="不限" />
         </div>
 
         {tags.length > 0 && (

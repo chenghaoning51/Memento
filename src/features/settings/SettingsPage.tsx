@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { open, ask } from "@tauri-apps/plugin-dialog";
 import { Download, FolderCog, HardDriveDownload, History } from "lucide-react";
 import { createBackup, inspectBackup, restoreBackup, type BackupInfo, type BackupSummary, type RestoreSummary } from "../../lib/backupApi";
 import { exportEntries, type ExportSummary } from "../../lib/exportApi";
 import { listTimeline, libraryInfo } from "../../lib/entryApi";
+import { formatCalendarDate, formatMoment } from "../../lib/localDate";
 import { relocateLibrary, resetLibraryLocation } from "../../lib/locationApi";
 import type { EntrySummary, LibraryInfo } from "../../types/entry";
 import { errorText } from "../../lib/errorText";
 
 function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024) return `${bytes} 字节`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
@@ -22,6 +24,7 @@ export function SettingsPage() {
   const [restored, setRestored] = useState<RestoreSummary | null>(null);
   const [busy, setBusy] = useState<"" | "export" | "backup" | "restore" | "relocate">("");
   const [relocated, setRelocated] = useState<string | null>(null);
+  const [version, setVersion] = useState("");
 
   // 导出范围：默认全部；选过之后只导出勾中的那些。
   const [picking, setPicking] = useState(false);
@@ -32,6 +35,7 @@ export function SettingsPage() {
     libraryInfo()
       .then(setInfo)
       .catch((cause: unknown) => setError(errorText(cause)));
+    getVersion().then(setVersion).catch(() => setVersion(""));
   }, []);
 
   const togglePicking = async () => {
@@ -65,7 +69,7 @@ export function SettingsPage() {
       return;
     }
     try {
-      const directory = await open({ directory: true, title: "选择导出的目录" });
+      const directory = await open({ directory: true, title: "日记导出到哪里" });
       if (!directory) return;
       setBusy("export");
       setError(null);
@@ -94,13 +98,13 @@ export function SettingsPage() {
   // 恢复前先预检并让用户确认：这份备份属于谁、有多少内容、会不会覆盖当前空间。
   const startRestore = async () => {
     try {
-      const directory = await open({ directory: true, title: "选择要恢复的备份目录" });
+      const directory = await open({ directory: true, title: "选择备份文件所在的文件夹" });
       if (!directory) return;
       setBusy("restore");
       setError(null);
       const preview: BackupInfo = await inspectBackup(directory);
       const confirmed = await ask(
-        `将用 ${preview.entryCount} 篇日记、${preview.letterCount} 封信（备份于 ${preview.createdAtUtc}）替换当前空间。恢复前会自动备份当前空间，确定继续吗？`,
+        `将用 ${preview.entryCount} 篇日记、${preview.letterCount} 封信（备份于 ${formatMoment(preview.createdAtUtc)}）替换现在的全部内容。恢复前会先把当前内容另存一份，确定继续吗？`,
         { title: "恢复备份", kind: "warning", okLabel: "恢复", cancelLabel: "取消" },
       );
       if (!confirmed) return;
@@ -116,11 +120,11 @@ export function SettingsPage() {
   // 换目录会复制整个空间过去；当前连接仍指向旧位置，所以提醒重启。
   const relocate = async () => {
     try {
-      const directory = await open({ directory: true, title: "选择新的数据目录" });
+      const directory = await open({ directory: true, title: "日记存放到哪个文件夹" });
       if (!directory) return;
       const confirmed = await ask(
-        `把当前空间完整复制到 ${directory}，之后从这个目录读写。复制不会删除原目录，确认继续吗？`,
-        { title: "更换数据目录", kind: "warning", okLabel: "复制过去", cancelLabel: "取消" },
+        `把现在的内容完整复制到 ${directory}，之后从那里读写。原文件夹会保留，确认继续吗？`,
+        { title: "更换存放位置", kind: "warning", okLabel: "复制过去", cancelLabel: "取消" },
       );
       if (!confirmed) return;
       setBusy("relocate");
@@ -136,15 +140,15 @@ export function SettingsPage() {
 
   const backToDefault = async () => {
     try {
-      const confirmed = await ask("下次启动时回到默认数据目录。已经复制到别处的文件不会被删除，确定吗？", {
-        title: "恢复默认目录",
+      const confirmed = await ask("下次打开应用时回到原来的存放位置。已经复制到别处的文件不会被删除，确定吗？", {
+        title: "回到默认位置",
         kind: "info",
-        okLabel: "恢复默认",
+        okLabel: "回到默认",
         cancelLabel: "取消",
       });
       if (!confirmed) return;
       await resetLibraryLocation();
-      setRelocated("默认目录（重启后生效）");
+      setRelocated("默认位置（重新打开应用后生效）");
     } catch (cause) {
       setError(errorText(cause));
     }
@@ -161,22 +165,20 @@ export function SettingsPage() {
       </header>
 
       <div className="settings-panel">
-        <h2>数据位置</h2>
-        <p className="settings-hint">日记、附件和备份都保存在这个文件夹里。</p>
+        <h2>存放位置</h2>
+        <p className="settings-hint">你的日记、图片和备份都放在这个文件夹里，全部留在这台电脑上。</p>
         {info ? (
           <dl className="settings-facts">
             <div>
-              <dt>数据目录</dt>
+              <dt>文件夹</dt>
               <dd>{info.root}</dd>
             </div>
-            <div>
-              <dt>数据库文件</dt>
-              <dd>{info.databasePath}</dd>
-            </div>
-            <div>
-              <dt>数据库模式版本</dt>
-              <dd>{info.schemaVersion}</dd>
-            </div>
+            {version && (
+              <div>
+                <dt>应用版本</dt>
+                <dd>{version}</dd>
+              </div>
+            )}
           </dl>
         ) : (
           <p className="settings-hint">{error ?? "正在读取…"}</p>
@@ -184,18 +186,18 @@ export function SettingsPage() {
         <div className="settings-actions">
           <button className="primary-button" type="button" onClick={() => void relocate()} disabled={busy !== ""}>
             <FolderCog size={13} strokeWidth={1.9} aria-hidden="true" />
-            {busy === "relocate" ? "正在复制…" : "更换数据目录"}
+            {busy === "relocate" ? "正在复制…" : "换个文件夹存放"}
           </button>
           <button className="link-button" type="button" onClick={() => void backToDefault()} disabled={busy !== ""}>
-            恢复默认目录
+            回到默认位置
           </button>
         </div>
         <p className="settings-hint">
-          更换目录会把当前空间复制过去，重启后从新位置读写；原目录保留不删。
+          换位置会把现有内容复制过去，重新打开应用后从新文件夹读写；原来的文件夹会留着，可以确认无误后自己删掉。
         </p>
         {relocated && (
           <p className="settings-hint" role="status">
-            已切换到 {relocated}，重启应用后生效。
+            已设置为 {relocated}。
           </p>
         )}
       </div>
@@ -203,7 +205,7 @@ export function SettingsPage() {
       <div className="settings-panel">
         <h2>导出</h2>
         <p className="settings-hint">
-          把日记写成 Markdown 文件，图片复制到同一目录的 images/ 文件夹里。导出后不依赖 Memento 也能打开。
+          把日记导出成普通的文本文件，图片放在一起。换个软件或换个设备也能打开，不再依赖 Memento。
         </p>
         <div className="settings-actions">
           <button className="primary-button" type="button" onClick={() => void startExport()} disabled={busy !== ""}>
@@ -229,7 +231,7 @@ export function SettingsPage() {
                         checked={selected.has(entry.id)}
                         onChange={() => toggleEntry(entry.id)}
                       />
-                      <span className="export-picker-date">{entry.entryDate}</span>
+                      <span className="export-picker-date">{formatCalendarDate(entry.entryDate)}</span>
                       <span className="export-picker-title">{entry.title || entry.excerpt || "未命名的一页"}</span>
                     </label>
                   </li>
@@ -244,7 +246,7 @@ export function SettingsPage() {
 
         {exported && (
           <p className="settings-hint" role="status">
-            已导出 {exported.entryCount} 篇日记、{exported.imageCount} 张图片到 {exported.directory}
+            已导出 {exported.entryCount} 篇日记、{exported.imageCount} 张图片，放在 {exported.directory}
           </p>
         )}
       </div>
@@ -252,7 +254,7 @@ export function SettingsPage() {
       <div className="settings-panel">
         <h2>备份与恢复</h2>
         <p className="settings-hint">
-          备份会把数据库、原图、缩略图和一份带校验值的清单复制到你选的目录。恢复会先用备份替换当前空间，替换前自动再备份一次当前空间。
+          备份会把你的日记、图片和它们的原始文件完整复制一份到你选的地方，换电脑或重装系统前建议先做一次。恢复会用备份里的内容替换现在看到的一切，替换前会先把当前内容另存一份。
         </p>
         <div className="settings-actions">
           <button className="primary-button" type="button" onClick={() => void startBackup()} disabled={busy !== ""}>
@@ -265,16 +267,16 @@ export function SettingsPage() {
           </button>
         </div>
         <p className="settings-hint">
-          恢复前自动留下的空间备份保存在数据目录的 backups/ 里，只保留最近 5 份，更旧的会自动删除。
+          每次恢复前都会自动留一份当前内容的备份，只保留最近 5 份，更早的会自动清理。
         </p>
         {backedUp && (
           <p className="settings-hint" role="status">
-            已备份 {backedUp.fileCount} 个文件（{formatBytes(backedUp.byteSize)}）到 {backedUp.directory}
+            已备份 {backedUp.fileCount} 个文件（{formatBytes(backedUp.byteSize)}），放在 {backedUp.directory}
           </p>
         )}
         {restored && (
           <p className="settings-hint" role="status">
-            已恢复 {restored.entryCount} 篇日记、{restored.letterCount} 封信；恢复前的空间备份在 {restored.preRestoreBackup}
+            已恢复 {restored.entryCount} 篇日记、{restored.letterCount} 封信。恢复前的备份留在 {restored.preRestoreBackup}
           </p>
         )}
       </div>
