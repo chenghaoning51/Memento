@@ -45,6 +45,8 @@ src/
   styles.css          全局设计令牌和基础样式
 ```
 
+视觉上采用二次元粉彩语汇：设计令牌（`--accent`、`--accent-soft`、圆角等）集中在 `styles.css` 的 `:root`，页面与组件只用令牌，不再各自硬编码颜色，换肤时只改一处。花瓣装饰是 `.petals` 固定层，由 `AppShell` 渲染，`z-index` 低于内容层。
+
 UI 不直接读写 SQLite 和文件系统。页面通过应用服务发起动作，应用服务再调用 Tauri 命令或仓储接口。
 
 ### Rust / Tauri

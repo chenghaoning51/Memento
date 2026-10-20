@@ -46,6 +46,16 @@ function NavigationButton({
 export function AppShell({ activePage, onNavigate, letterBadge = 0, children }: AppShellProps) {
   return (
     <div className="app-shell">
+      {/* 飘落的花瓣：纯装饰，不参与布局，读屏与键盘都跳过。 */}
+      <div className="petals" aria-hidden="true">
+        <span style={{ left: "8%", animationDuration: "13s", animationDelay: "0s" }} />
+        <span style={{ left: "26%", animationDuration: "16s", animationDelay: "2s" }} />
+        <span style={{ left: "47%", animationDuration: "14s", animationDelay: "5s" }} />
+        <span style={{ left: "66%", animationDuration: "17s", animationDelay: "1s" }} />
+        <span style={{ left: "82%", animationDuration: "12s", animationDelay: "4s" }} />
+        <span style={{ left: "93%", animationDuration: "15s", animationDelay: "7s" }} />
+      </div>
+
       <aside className="sidebar" aria-label="主导航">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
