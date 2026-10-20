@@ -50,13 +50,13 @@ React 页面与编辑状态
 | 层 | 位置 | 现状 |
 | --- | --- | --- |
 | 前端入口 | `src/main.tsx` | 只挂载 React 与全局样式 |
-| 应用壳 | `src/app/App.tsx`、`AppShell.tsx`、`navigation.ts`、`useDesktopLifecycle.ts` | 组件状态切页、切页守卫、来源返回、叉号最小化与托盘退出；“收藏册”是占位页 |
+| 应用壳 | `src/app/App.tsx`、`AppShell.tsx`、`navigation.ts`、`useDesktopLifecycle.ts` | 组件状态切页、切页守卫、来源返回、叉号收进托盘与托盘退出；“收藏册”是占位页 |
 | 功能页面 | `src/features/{journal,timeline,calendar,search,letters,trash,settings}` | 全部接真实数据 |
 | 应用服务 | `src/lib/*Api.ts`、`entryContent.ts`、`letterContent.ts`、`localDate.ts`、`unlockTime.ts`、`errorText.ts`、`locationApi.ts` | UI 不碰 SQL 与文件路径 |
 | 编辑与保存 | `features/journal/useAutosave.ts`、`EntryEditor.tsx`、`TagBar.tsx` | 800 ms 空闲保存、5 秒强制保存、串行写入、失败重试；切页、叉号与托盘退出共用同一个 flush 守卫 |
 | 桌面入口 | `src-tauri/src/lib.rs`、`tray.rs` | 打开 Library、注册 33 个命令、系统托盘、dialog 插件与 `attachment` 协议 |
 | Rust 模块 | `db/`、`entries/`、`attachments/`、`tags/`、`letters/`、`export/`、`backup/`、`location.rs`、`tray.rs`、`commands.rs`、`error.rs` | 迁移 v1–v5、仓储、正文转 Markdown、备份与恢复、数据目录切换、托盘图标与菜单 |
-| 权限与打包 | `src-tauri/capabilities/default.json`、`tauri.conf.json` | `core:default`、窗口最小化/还原/显示/聚焦、`dialog:default`；CSP 只放行自身资源与附件图片；NSIS 目标 |
+| 权限与打包 | `src-tauri/capabilities/default.json`、`tauri.conf.json` | `core:default`、窗口隐藏/显示/还原/聚焦、`dialog:default`；CSP 只放行自身资源与附件图片；NSIS 目标 |
 
 前端依赖：React 19、TypeScript 6、Vite 8、Tauri API 2、dialog 插件 2.8、Lucide、Tiptap 3.32。
 Rust 依赖：Tauri 2（启用 `tray-icon`）、Serde、rusqlite（bundled）、time、uuid、sha2、image 0.25（只开 png/jpeg）、tauri-plugin-dialog。
