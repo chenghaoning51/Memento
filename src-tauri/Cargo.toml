@@ -1,6 +1,6 @@
 [package]
 name = "memento"
-version = "1.0.0"
+version = "1.0.1"
 description = "Memento 私人时光收藏室"
 authors = ["you"]
 edition = "2024"

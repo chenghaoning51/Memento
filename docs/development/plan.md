@@ -1,12 +1,12 @@
 # 开发计划与路线图
 
-- 基线：2026-10-19，1.0.0 已交付。
+- 基线：2026-10-20，1.0.1 已交付。
 - 产品范围见[产品](../product/README.md)与[功能规则](../product/features.md)。
 - 完成依据见[验收清单](acceptance.md)，执行记录见[迭代记录](iterations.md)。
 
 ## 当前状态
 
-M0–M6 全部完成，P0 发布门槛已满足，Windows 安装包 `Memento_1.0.0_x64-setup.exe` 已在本机验证。
+M0–M6 全部完成，P0 发布门槛已满足，Windows 安装包 `Memento_1.0.1_x64-setup.exe` 已在本机验证。
 
 | 阶段 | 交付 | 状态 |
 | --- | --- | --- |

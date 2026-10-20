@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Feather, Plus } from "lucide-react";
 import { attachmentSource } from "../../lib/attachmentSource";
-import { createEntry, deleteEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
+import { createEntry, deleteAttachment, deleteEntry, getEntry, listEntries, saveEntry } from "../../lib/entryApi";
 import { readContent, writeContent } from "../../lib/entryContent";
 import { formatCalendarDate, formatClockTime, formatLocalDate, parseLocalDate, toLocalDateString } from "../../lib/localDate";
 import type { JSONContent } from "@tiptap/core";
@@ -33,6 +33,8 @@ type JournalPageProps = {
   entryId?: string;
   /** 从时间线或月历进来时显示的返回入口。 */
   back?: { label: string; onClick: () => void };
+  /** 点标签时跳到已带上该标签的搜索页。 */
+  onOpenTag?: (tagId: string) => void;
   registerLeaveGuard: (guard: (() => Promise<boolean>) | null) => void;
 };
 
@@ -41,6 +43,7 @@ export function JournalPage({
   entryDate: requestedDate,
   entryId: requestedEntryId,
   back,
+  onOpenTag,
   registerLeaveGuard,
 }: JournalPageProps) {
   const entryDate = requestedDate ?? toLocalDateString(new Date());
@@ -184,6 +187,32 @@ export function JournalPage({
     schedule();
   };
 
+  // 图片已从正文里摘掉，先把新正文落盘，再删磁盘文件：
+  // 反过来的话，保存失败就会留下一条指向已删除文件的引用。
+  const onRemoveAttachment = useCallback(
+    async (
+      attachmentId: string,
+      content: JSONContent,
+      contentText: string,
+      coverAttachmentId: string | null,
+    ) => {
+      const current = draftRef.current;
+      if (!current) return;
+      const next = { ...current, content, contentText, coverAttachmentId };
+      setDraft(next);
+      // 直接写这一份，不等自动保存的定时器，也不用读可能还没刷新的 ref。
+      await saveEntry({
+        id: next.id,
+        title: next.title,
+        contentJson: writeContent(next.content),
+        contentText: next.contentText,
+        coverAttachmentId: next.coverAttachmentId,
+      });
+      await deleteAttachment(attachmentId);
+    },
+    [],
+  );
+
   return (
     <section className="journal-page" aria-labelledby="page-title">
       <header className="page-header">
@@ -244,7 +273,13 @@ export function JournalPage({
                 aria-label="日记标题"
                 onChange={(event) => onTitleChange(event.target.value)}
               />
-              <EntryEditor key={`editor-${draft.id}`} entryId={draft.id} content={draft.content} onChange={onContentChange} />
+              <EntryEditor
+                key={`editor-${draft.id}`}
+                entryId={draft.id}
+                content={draft.content}
+                onChange={onContentChange}
+                onRemoveAttachment={onRemoveAttachment}
+              />
             </>
           ) : (
             <div className="empty-page">
@@ -259,7 +294,7 @@ export function JournalPage({
             </div>
           )}
 
-          {draft && <TagBar key={`tags-${draft.id}`} entryId={draft.id} />}
+          {draft && <TagBar key={`tags-${draft.id}`} entryId={draft.id} onOpenTag={onOpenTag} />}
 
           <div className="sheet-footer">
             <span className={`save-status is-${status}`} role="status">

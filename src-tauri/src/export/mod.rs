@@ -162,10 +162,45 @@ fn render_node(node: &Value, attachments: &HashMap<String, String>) -> String {
         }
         "horizontalRule" => "---\n\n".to_string(),
         "hardBreak" => "  \n".to_string(),
+        "bulletList" => render_list(node, attachments, false),
+        "orderedList" => render_list(node, attachments, true),
         "text" => render_text(node),
         "image" => render_image(node, attachments),
         _ => render_children(node, attachments),
     }
+}
+
+/// 列表：每项缩进两格；子列表跟着父项内容一起缩进，嵌套层级才看得出来。
+fn render_list(node: &Value, attachments: &HashMap<String, String>, ordered: bool) -> String {
+    let start = node
+        .get("attrs")
+        .and_then(|attrs| attrs.get("start"))
+        .and_then(Value::as_u64)
+        .unwrap_or(1);
+
+    let items = node
+        .get("content")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .enumerate()
+                .map(|(index, item)| {
+                    let marker = if ordered {
+                        format!("{}. ", start + index as u64)
+                    } else {
+                        "- ".to_string()
+                    };
+                    let body = render_children(item, attachments);
+                    let body = body.trim_end_matches('\n');
+                    let indented = body.replace('\n', "\n  ");
+                    format!("{marker}{indented}\n")
+                })
+                .collect::<String>()
+        })
+        .unwrap_or_default();
+
+    format!("{items}\n")
 }
 
 fn render_children(node: &Value, attachments: &HashMap<String, String>) -> String {

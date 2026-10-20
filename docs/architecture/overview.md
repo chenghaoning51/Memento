@@ -9,8 +9,8 @@ M1 打通了“创建 → 编辑 → 自动保存 → 关闭重开”的第一�
 - 窗口生命周期集中在前端应用壳：点击叉号把窗口收进系统托盘（任务栏不留窗口），托盘菜单的「退出」经 `memento://quit-requested` 事件回到前端落盘，成功后才调用 `quit_app` 结束进程；托盘图标与菜单在 Rust 的 `tray` 模块创建（见 [ADR-0011](../decisions/0011-close-to-tray.md)）。
 - 日记页是真实数据流：按传入的本地日历日期列出当天日记，可新建与切换，停止输入 800 ms 自动保存、连续输入最多 5 秒强制保存（见 [ADR-0003](../decisions/0003-editor-and-body-format.md)）。“今天”与“某一天”是同一个页面，只是日期不同。
 - 时间回看分两条只读查询：`list_timeline` 按日记日期倒序、同一天内后写的在前分页；`list_entry_dates` 按日期范围汇总每天篇数与当天首图，供月历一次取整屏（含相邻月格子）。排序、分组与统计都在 SQL 里完成，前端只做渲染。
-- 正文用 Tiptap 编辑，支持标题、引用、分隔线、链接、加粗、斜体和撤销重做；结构化 JSON 存 `content_json`，纯文本副本存 `content_text` 供摘要与后续搜索使用。正文格式当前为 version 2，旧的 version 1 正文在读取时自动升级（见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)）。
-- 图片以附件文件保存：导入时把原图复制到 `attachments/<entry_id>/<attachment_id>.<ext>` 并生成缩略图，正文 image 节点只记附件 ID；编辑器通过 `attachment` 自定义协议按 ID 读图，前端不接触磁盘路径（见 [ADR-0005](../decisions/0005-attachment-files.md)）。
+- 正文用 Tiptap 编辑，支持标题、引用、分隔线、链接、加粗、斜体、删除线、有序/无序列表和撤销重做；结构化 JSON 存 `content_json`，纯文本副本存 `content_text` 供摘要与后续搜索使用。正文格式当前为 version 2，旧的 version 1 正文在读取时自动升级（见 [ADR-0004](../decisions/0004-tiptap-editor-and-content-v2.md)）。列表与删除线用的是 ProseMirror 标准节点，不需要升版本。
+- 图片以附件文件保存：导入时把原图复制到 `attachments/<entry_id>/<attachment_id>.<ext>` 并生成缩略图，正文 image 节点只记附件 ID；编辑器通过 `attachment` 自定义协议按 ID 读图，前端不接触磁盘路径（见 [ADR-0005](../decisions/0005-attachment-files.md)）。删除图片时先落盘新正文，再调 `delete_attachment` 同时删原图与缩略图。
 - 标签独立存表：编辑器上方的标签栏在确认和移除时立即写库，规范化后按 `normalized_name` 复用同一行；正文里不存标签字符串（见 [ADR-0006](../decisions/0006-tags-and-soft-delete.md)）。
 - 删除日记是软删除：页脚的“移到回收站”只写 `deleted_at_utc`，日记从“今天”列表消失；“回收站”页按删除时间从新到旧列出被删日记并可恢复，正文、附件与标签关系都不动。
 - 检索在一条 SQL 里组合三类条件：关键词对 `search_text`（标题与正文折叠空白、转小写后的副本）做转义后的子串匹配，标签走 `entry_tags` 交集，日期范围含两端；排序与分页与时间线一致。`search_text` 在每次保存时与 `excerpt` 同一次 UPDATE 重算，迁移 v4 时对旧库回填一次（见 [ADR-0007](../decisions/0007-search-strategy.md)）。

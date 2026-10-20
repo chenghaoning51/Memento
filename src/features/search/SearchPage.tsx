@@ -12,13 +12,16 @@ const PAGE_SIZE = 40;
 
 type SearchPageProps = {
   onOpenEntry: (entryDate: string, entryId: string) => void;
+  /** 从日记里的标签点进来时预选的标签。 */
+  initialTagId?: string;
 };
 
 /** 搜索：关键词、标签与日期范围可以单独用，也可以叠在一起。 */
-export function SearchPage({ onOpenEntry }: SearchPageProps) {
+export function SearchPage({ onOpenEntry, initialTagId }: SearchPageProps) {
   const [text, setText] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  // 从日记里的标签点进来时，直接带上那个标签筛选。
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagId ? [initialTagId] : []);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 

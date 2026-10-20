@@ -5,7 +5,7 @@ import type { Tag } from "../../types/entry";
 import { errorText } from "../../lib/errorText";
 
 /** 标签栏：确认或移除都立刻写库，不等正文的自动保存。 */
-export function TagBar({ entryId }: { entryId: string }) {
+export function TagBar({ entryId, onOpenTag }: { entryId: string; onOpenTag?: (tagId: string) => void }) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +43,14 @@ export function TagBar({ entryId }: { entryId: string }) {
       <div className="tag-chips">
         {tags.map((tag) => (
           <span className="tag-chip" key={tag.id}>
-            {tag.name}
+            <button
+              className="tag-open"
+              type="button"
+              title={`看看所有带「${tag.name}」的日记`}
+              onClick={() => onOpenTag?.(tag.id)}
+            >
+              {tag.name}
+            </button>
             <button
               className="tag-remove"
               type="button"

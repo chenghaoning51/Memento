@@ -165,6 +165,23 @@ button:focus-visible {
   color: #7787b6;
 }
 
+.nav-badge {
+  min-width: 17px;
+  margin-left: auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  color: #fffdf7;
+  background: var(--clay);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.nav-item.is-active .nav-badge {
+  margin-right: 4px;
+}
+
 .sidebar-bottom {
   margin-top: auto;
 }
@@ -622,6 +639,29 @@ button:focus-visible {
   color: #5b6478;
   background: #f3f5fa;
   font-size: 11px;
+}
+
+/* 标签名本身可点：跳到已选中这个标签的搜索页。 */
+.tag-open {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tag-open:hover {
+  color: var(--blue);
+  text-decoration: underline;
+  text-decoration-color: #b9c2dc;
+  text-underline-offset: 2px;
+}
+
+.tag-open:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .tag-remove {
@@ -1775,4 +1815,87 @@ button:focus-visible {
   .letter-unlock {
     flex-wrap: wrap;
   }
+}
+
+/* ---------- 图片放大 ---------- */
+
+.image-viewer {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  inset: 0;
+  padding: 40px;
+  place-items: center;
+  background: rgb(38 36 32 / 82%);
+}
+
+.image-viewer-frame {
+  display: flex;
+  max-width: min(100%, 1100px);
+  max-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.image-viewer-image {
+  max-width: 100%;
+  max-height: calc(100vh - 150px);
+  border-radius: var(--radius-control);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 34%);
+  object-fit: contain;
+}
+
+.image-viewer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.image-viewer-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  color: #f2efe7;
+  background: rgb(255 255 255 / 10%);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.image-viewer-button:hover {
+  border-color: rgb(255 255 255 / 45%);
+  background: rgb(255 255 255 / 18%);
+}
+
+.image-viewer-button:focus-visible {
+  outline: 2px solid #f2efe7;
+  outline-offset: 2px;
+}
+
+/* 正文里的图片提示可点开放大。 */
+.entry-editor img {
+  cursor: zoom-in;
+}
+
+/* ---------- 正文列表 ---------- */
+
+.entry-editor ul,
+.entry-editor ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.entry-editor li {
+  margin: 3px 0;
+}
+
+.entry-editor li p {
+  margin: 0;
+}
+
+.entry-editor s {
+  color: #7d7f79;
 }

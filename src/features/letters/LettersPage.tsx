@@ -31,7 +31,7 @@ function tomorrow(): string {
   return toLocalDateString(new Date(Date.now() + DAY_MS));
 }
 
-export function LettersPage() {
+export function LettersPage({ onLettersChanged }: { onLettersChanged?: () => void }) {
   const [letters, setLetters] = useState<Letter[] | null>(null);
   const [current, setCurrent] = useState<Letter | null>(null);
   const [reading, setReading] = useState(false);
@@ -45,7 +45,9 @@ export function LettersPage() {
 
   const load = useCallback(async () => {
     setLetters(await listLetters());
-  }, []);
+    // 状态推进后侧栏角标跟着变：读过的信不再算“到期待读”。
+    onLettersChanged?.();
+  }, [onLettersChanged]);
 
   useEffect(() => {
     setNow(new Date());

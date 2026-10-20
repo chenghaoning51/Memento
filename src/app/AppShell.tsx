@@ -6,15 +6,19 @@ import { primaryNavigation, utilityNavigation } from "./navigation";
 type AppShellProps = PropsWithChildren<{
   activePage: AppPage;
   onNavigate: (page: AppPage) => void;
+  /** 侧栏角标：到期待读的信有几封。 */
+  letterBadge?: number;
 }>;
 
 function NavigationButton({
   item,
   active,
+  badge,
   onClick,
 }: {
   item: NavigationItem;
   active: boolean;
+  badge?: number;
   onClick: () => void;
 }) {
   const Icon = item.icon;
@@ -29,12 +33,17 @@ function NavigationButton({
     >
       <Icon aria-hidden="true" size={18} strokeWidth={1.7} />
       <span>{item.label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="nav-badge" title={`${badge} 封到期的信`}>
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
       {active && <ChevronRight className="nav-chevron" aria-hidden="true" size={15} />}
     </button>
   );
 }
 
-export function AppShell({ activePage, onNavigate, children }: AppShellProps) {
+export function AppShell({ activePage, onNavigate, letterBadge = 0, children }: AppShellProps) {
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="主导航">
@@ -56,6 +65,7 @@ export function AppShell({ activePage, onNavigate, children }: AppShellProps) {
               key={item.id}
               item={item}
               active={activePage === item.id}
+              badge={item.id === "letters" ? letterBadge : undefined}
               onClick={() => onNavigate(item.id)}
             />
           ))}

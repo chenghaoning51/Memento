@@ -577,6 +577,16 @@ fn export_writes_markdown_and_copies_images() {
         ]},
         {"type":"blockquote","content":[{"type":"paragraph","content":[{"type":"text","text":"雨还在下。"}]}]},
         {"type":"horizontalRule"},
+        {"type":"bulletList","content":[
+            {"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"带伞"}]}]},
+            {"type":"listItem","content":[{"type":"paragraph","content":[
+                {"type":"text","marks":[{"type":"strike"}],"text":"等雨停"}
+            ]}]}
+        ]},
+        {"type":"orderedList","attrs":{"start":1},"content":[
+            {"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"买咖啡"}]}]},
+            {"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"写日记"}]}]}
+        ]},
         {"type":"paragraph","content":[{"type":"image","attrs":{"alt":"窗外的树","attachmentId":"att-1"}}]}
     ]}"#;
 
@@ -599,6 +609,10 @@ fn export_writes_markdown_and_copies_images() {
     assert!(markdown.contains("窗外的**梧桐叶**被打湿了。"));
     assert!(markdown.contains("> 雨还在下。"));
     assert!(markdown.contains("---"));
+    assert!(markdown.contains("- 带伞"));
+    assert!(markdown.contains("- ~~等雨停~~"));
+    assert!(markdown.contains("1. 买咖啡"));
+    assert!(markdown.contains("2. 写日记"));
     assert!(markdown.contains("![窗外的树](images/pic.png)"));
     assert!(target.join("images/pic.png").exists());
 

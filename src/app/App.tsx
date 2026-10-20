@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { AppShell } from "./AppShell";
 import type { AppPage } from "./navigation";
 import { useDesktopLifecycle } from "./useDesktopLifecycle";
+import { useUnreadLetters } from "./useUnreadLetters";
 import { CalendarPage } from "../features/calendar/CalendarPage";
 import { JournalPage } from "../features/journal/JournalPage";
 import { LettersPage } from "../features/letters/LettersPage";
@@ -27,6 +28,8 @@ const backLabels: Record<JournalTarget["back"], string> = {
 export default function App() {
   const [page, setPage] = useState<AppPage>("today");
   const [target, setTarget] = useState<JournalTarget | null>(null);
+  // 从日记里的标签跳过来时，搜索页要带着这个标签打开。
+  const [tagFilter, setTagFilter] = useState<string | undefined>(undefined);
   const leaveGuardRef = useRef<(() => Promise<boolean>) | null>(null);
 
   // 切页前先落盘：编辑中的页面可以注册一个守卫，落盘失败时取消切换（A04）。
@@ -36,10 +39,25 @@ export default function App() {
       void (async () => {
         if (leaveGuardRef.current && !(await leaveGuardRef.current())) return;
         setTarget(null);
+        // 从侧栏直接进搜索时不带任何预选标签。
+        if (next === "search") setTagFilter(undefined);
         setPage(next);
       })();
     },
     [page, target],
+  );
+
+  // 点日记里的标签：落到搜索页，并预先选中这个标签。
+  const openTag = useCallback(
+    (tagId: string) => {
+      void (async () => {
+        if (leaveGuardRef.current && !(await leaveGuardRef.current())) return;
+        setTarget(null);
+        setTagFilter(tagId);
+        setPage("search");
+      })();
+    },
+    [],
   );
 
   // 时间线与月历进入的是同一个日记页，只是带上日期和来源页。
@@ -61,13 +79,21 @@ export default function App() {
   // 叉号收进托盘、托盘「退出」才结束进程；两者都先走页面注册的落盘守卫。
   useDesktopLifecycle(leaveGuardRef);
 
+  // 到期待读的信在侧栏留个角标；信箱页每次读写后回报一次，角标跟着变。
+  const { count: unreadLetters, refresh: refreshUnreadLetters } = useUnreadLetters();
+
   return (
-    <AppShell activePage={target?.back ?? page} onNavigate={navigate}>
+    <AppShell
+      activePage={target?.back ?? page}
+      onNavigate={navigate}
+      letterBadge={unreadLetters}
+    >
       {page === "today" && (
         <JournalPage
           entryDate={target?.entryDate}
           entryId={target?.entryId}
           back={target ? { label: backLabels[target.back], onClick: () => navigate(target.back) } : undefined}
+          onOpenTag={openTag}
           registerLeaveGuard={registerLeaveGuard}
         />
       )}
@@ -79,9 +105,12 @@ export default function App() {
       )}
       {page === "calendar" && <CalendarPage onOpenDate={(entryDate) => openJournal("calendar", entryDate)} />}
       {page === "search" && (
-        <SearchPage onOpenEntry={(entryDate, entryId) => openJournal("search", entryDate, entryId)} />
+        <SearchPage
+          onOpenEntry={(entryDate, entryId) => openJournal("search", entryDate, entryId)}
+          initialTagId={tagFilter}
+        />
       )}
-      {page === "letters" && <LettersPage />}
+      {page === "letters" && <LettersPage onLettersChanged={refreshUnreadLetters} />}
       {page === "trash" && <TrashPage />}
       {page === "settings" && <SettingsPage />}
       {page !== "today" &&
